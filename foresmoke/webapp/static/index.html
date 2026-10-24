@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ForeSmoke · Exit obstruction review</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1l7 7-7 7-7-7z' fill='%2338d0ff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◆</span>
+      <span class="brand-name">ForeSmoke</span>
+      <span class="brand-sub">Exit-obstruction review · recorded video</span>
+    </div>
+    <div class="source-clock" title="Position in the source video. All incident times use this clock.">
+      <span class="clock-caption">Source video time</span>
+      <strong id="sourceClock" class="mono">--:--.---</strong>
+    </div>
+    <div id="loadedRun" class="loaded-run" aria-live="polite">No run loaded</div>
+  </header>
+
+  <main class="workspace">
+    <!-- LEFT: inputs -->
+    <aside class="sidebar" aria-label="Video, zone and analysis">
+      <section class="block">
+        <h2><span class="step">1</span> Video</h2>
+        <label class="field">
+          <span>Choose a video</span>
+          <select id="videoSelect"><option value="">Loading…</option></select>
+        </label>
+        <label class="btn btn-ghost btn-block upload">
+          <input id="uploadInput" type="file" accept="video/*,.mp4,.mov,.m4v,.avi,.mkv,.webm" hidden>
+          Upload a recorded video…
+        </label>
+        <div id="uploadProgress" class="progress thin" hidden><span></span></div>
+        <dl id="videoInfo" class="facts compact" hidden></dl>
+      </section>
+
+      <section class="block">
+        <h2><span class="step">2</span> Camera &amp; view</h2>
+        <label class="field"><span>Camera name</span><input id="cameraName" value="cam01" autocomplete="off"></label>
+        <label class="field"><span>View name</span><input id="viewName" value="exit-view" autocomplete="off"></label>
+        <p class="hint">A new view ID is generated each time you save a zone. Redraw the zone if the camera moves.</p>
+      </section>
+
+      <section class="block">
+        <h2><span class="step">3</span> Exit zone</h2>
+        <div id="zoneList" class="zone-list" role="radiogroup" aria-label="Saved zones for this video"></div>
+        <button id="drawBtn" type="button" class="btn btn-block">Draw a new zone on this frame</button>
+
+        <div id="drawPanel" class="draw-panel" hidden>
+          <p class="hint strong">Pause on a clear frame, then click the floor corners that must stay clear.
+            Drag a corner to move it; right-click (or select + Delete) to remove it.</p>
+          <div class="btn-row">
+            <button id="undoBtn" type="button" class="btn btn-small btn-ghost" title="Undo (Ctrl/Cmd+Z)">Undo</button>
+            <button id="deletePointBtn" type="button" class="btn btn-small btn-ghost">Delete point</button>
+            <button id="resetBtn" type="button" class="btn btn-small btn-ghost">Clear</button>
+          </div>
+          <label class="field"><span>Zone name</span><input id="zoneName" value="east_exit" autocomplete="off"></label>
+          <details class="params" open>
+            <summary>Detection parameters</summary>
+            <fieldset class="labels">
+              <legend>Objects to watch</legend>
+              <div id="labelChoices" class="label-grid"></div>
+              <p class="hint">“person” is reserved: people are treated as occluding the view, not as obstructions.</p>
+            </fieldset>
+            <div class="grid-2">
+              <label class="field"><span>Confirm after (s)</span>
+                <input id="confirmS" type="number" min="0.2" max="600" step="0.1" value="5.0"></label>
+              <label class="field"><span>Resolve after clear (s)</span>
+                <input id="resolveS" type="number" min="0.2" max="600" step="0.1" value="3.0"></label>
+            </div>
+            <label class="field"><span>Minimum confidence</span>
+              <input id="minConf" type="number" min="0" max="1" step="0.05" value="0.35"></label>
+          </details>
+          <ul id="drawErrors" class="messages" aria-live="polite"></ul>
+          <div class="btn-row">
+            <button id="saveZoneBtn" type="button" class="btn btn-primary">Save zone</button>
+            <button id="cancelDrawBtn" type="button" class="btn btn-ghost">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="step">4</span> Analysis</h2>
+        <button id="runBtn" type="button" class="btn btn-primary btn-block">Run analysis</button>
+        <p class="hint">Processing is not instant: detection runs on this computer's CPU at 5 analysed frames per
+          second of video. Short clips (under ~30 s) analyse fastest.</p>
+        <div id="runProgress" class="run-progress" hidden>
+          <div class="progress"><span></span></div>
+          <div class="run-progress-line">
+            <span id="runProgressText">Starting…</span>
+            <span class="processing-time" title="Wall-clock processing time, not video time">⏱ <span id="runElapsed">0 s</span> processing</span>
+          </div>
+          <button id="cancelRunBtn" type="button" class="btn btn-small btn-danger">Cancel analysis</button>
+        </div>
+        <div id="runMessage" class="run-message" role="status" aria-live="polite" hidden></div>
+      </section>
+
+      <section class="block">
+        <h2>Previous runs</h2>
+        <ul id="runList" class="run-list"></ul>
+      </section>
+    </aside>
+
+    <!-- CENTER: video + timeline -->
+    <section class="center" aria-label="Video and timeline">
+      <div id="stage" class="stage">
+        <video id="video" playsinline muted preload="auto"></video>
+        <canvas id="overlay" aria-label="Zone and detection overlay"></canvas>
+        <div id="stageEmpty" class="stage-empty">Choose or upload a video to begin.</div>
+      </div>
+      <div class="transport">
+        <button id="playBtn" type="button" class="btn btn-icon" aria-label="Play">▶</button>
+        <button id="backBtn" type="button" class="btn btn-icon" aria-label="Previous frame" title="Previous frame (←)">◀︎|</button>
+        <button id="fwdBtn" type="button" class="btn btn-icon" aria-label="Next frame" title="Next frame (→)">|▶︎</button>
+        <input id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Scrub source video">
+        <span class="mono time"><span id="timeNow">00:00.000</span> / <span id="timeTotal">00:00.000</span></span>
+        <label class="toggle"><input id="debugToggle" type="checkbox"> All detections (debug)</label>
+      </div>
+      <div class="timeline-block">
+        <div class="timeline-head">
+          <h2>Incident timeline <span class="muted small">· positioned by source-video time</span></h2>
+          <div class="legend" aria-label="Status legend">
+            <span class="chip chip-clear"><span class="chip-icon" aria-hidden="true">✓</span>Access clear</span>
+            <span class="chip chip-possible"><span class="chip-icon" aria-hidden="true">◔</span>Checking obstruction</span>
+            <span class="chip chip-confirmed"><span class="chip-icon" aria-hidden="true">!</span>Obstruction confirmed</span>
+            <span class="chip chip-resolved"><span class="chip-icon" aria-hidden="true">↺</span>Incident resolved</span>
+            <span class="chip chip-unknown"><span class="chip-icon" aria-hidden="true">?</span>View unavailable or obscured</span>
+          </div>
+        </div>
+        <div id="timeline" class="timeline"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: status + incidents -->
+    <aside class="panel" aria-label="Zone status and incidents">
+      <section class="block">
+        <h2>Zone status <span class="muted small">at playhead</span></h2>
+        <div id="zoneStatus"></div>
+      </section>
+      <section class="block">
+        <h2>Active incident</h2>
+        <div id="activeIncident"></div>
+      </section>
+      <section class="block grow">
+        <h2>Incident history</h2>
+        <div id="incidentHistory" class="incident-history"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="alert" hidden></div>
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

@@ -6,4 +6,6 @@ __pycache__/
 build/
 dist/
 runs/
+webapp_data/
+*.pt
 

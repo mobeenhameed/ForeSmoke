@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Detection": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Label",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "bbox_xyxy": {
+          "items": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox Xyxy",
+          "type": "array"
+        },
+        "track_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Track Id"
+        }
+      },
+      "required": [
+        "label",
+        "confidence",
+        "bbox_xyxy",
+        "track_id"
+      ],
+      "title": "Detection",
+      "type": "object"
+    },
+    "FrameMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "frame_ref": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Frame Ref"
+        }
+      },
+      "required": [
+        "index",
+        "width",
+        "height",
+        "frame_ref"
+      ],
+      "title": "FrameMeta",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "camera_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "title": "Camera Id",
+      "type": "string"
+    },
+    "view_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "title": "View Id",
+      "type": "string"
+    },
+    "source_kind": {
+      "enum": [
+        "live",
+        "video",
+        "image"
+      ],
+      "title": "Source Kind",
+      "type": "string"
+    },
+    "seq": {
+      "minimum": 0,
+      "title": "Seq",
+      "type": "integer"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "tracker_epoch": {
+      "minimum": 0,
+      "title": "Tracker Epoch",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "unavailable",
+        "eof"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "frame": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FrameMeta"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "detections": {
+      "items": {
+        "$ref": "#/$defs/Detection"
+      },
+      "title": "Detections",
+      "type": "array"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Error"
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "camera_id",
+    "view_id",
+    "source_kind",
+    "seq",
+    "t_ms",
+    "tracker_epoch",
+    "status",
+    "frame",
+    "detections",
+    "error"
+  ],
+  "title": "FrameObservation",
+  "type": "object"
+}

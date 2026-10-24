@@ -1,0 +1,1 @@
+{"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":0,"t_ms":0,"tracker_epoch":0,"status":"ok","frame":{"index":0,"width":1280,"height":720,"frame_ref":null},"detections":[{"label":"chair","confidence":0.91,"bbox_xyxy":[0.5,0.2,0.4,0.8],"track_id":"7"}],"error":null}

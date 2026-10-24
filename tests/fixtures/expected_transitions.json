@@ -1,0 +1,75 @@
+{
+  "blocked_then_clear": [
+    [
+      "incident_confirmed",
+      5000
+    ],
+    [
+      "incident_resolved",
+      9200
+    ]
+  ],
+  "brief_obstruction": [],
+  "walking_person": [],
+  "outside_zone": [],
+  "id_switch": [
+    [
+      "incident_confirmed",
+      5000
+    ]
+  ],
+  "brief_detector_miss": [
+    [
+      "incident_confirmed",
+      5400
+    ]
+  ],
+  "failure_after_confirmation": [
+    [
+      "incident_confirmed",
+      5000
+    ]
+  ],
+  "recovery": [
+    [
+      "incident_confirmed",
+      5000
+    ],
+    [
+      "incident_resolved",
+      13000
+    ]
+  ],
+  "large_gap": [],
+  "two_objects": [
+    [
+      "incident_confirmed",
+      5000
+    ]
+  ],
+  "new_occurrence": [
+    [
+      "incident_confirmed",
+      5000
+    ],
+    [
+      "incident_resolved",
+      9200
+    ],
+    [
+      "incident_confirmed",
+      15200
+    ]
+  ],
+  "low_confidence": [],
+  "duplicate_seq": [
+    [
+      "incident_confirmed",
+      5000
+    ],
+    [
+      "incident_resolved",
+      9200
+    ]
+  ]
+}

@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Label",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "bbox_xyxy": {
+          "items": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox Xyxy",
+          "type": "array"
+        },
+        "track_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Track Id"
+        },
+        "zone_overlap": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Zone Overlap",
+          "type": "number"
+        }
+      },
+      "required": [
+        "label",
+        "confidence",
+        "bbox_xyxy",
+        "track_id",
+        "zone_overlap"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "seq": {
+          "minimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "frame_index": {
+          "minimum": 0,
+          "title": "Frame Index",
+          "type": "integer"
+        },
+        "frame_ref": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Frame Ref"
+        },
+        "tracker_epoch": {
+          "minimum": 0,
+          "title": "Tracker Epoch",
+          "type": "integer"
+        },
+        "objects": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "title": "Objects",
+          "type": "array"
+        }
+      },
+      "required": [
+        "seq",
+        "t_ms",
+        "frame_index",
+        "frame_ref",
+        "tracker_epoch",
+        "objects"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "event_type": {
+      "enum": [
+        "incident_confirmed",
+        "incident_resolved"
+      ],
+      "title": "Event Type",
+      "type": "string"
+    },
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "incident_id": {
+      "format": "uuid",
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "camera_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "title": "Camera Id",
+      "type": "string"
+    },
+    "view_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "title": "View Id",
+      "type": "string"
+    },
+    "zone_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "title": "Zone Id",
+      "type": "string"
+    },
+    "hazard_type": {
+      "const": "blocked_exit",
+      "title": "Hazard Type",
+      "type": "string"
+    },
+    "phase": {
+      "enum": [
+        "CONFIRMED",
+        "RESOLVED"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "t_ms": {
+      "minimum": 0,
+      "title": "T Ms",
+      "type": "integer"
+    },
+    "first_seen_ms": {
+      "minimum": 0,
+      "title": "First Seen Ms",
+      "type": "integer"
+    },
+    "confirmed_at_ms": {
+      "minimum": 0,
+      "title": "Confirmed At Ms",
+      "type": "integer"
+    },
+    "resolved_at_ms": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Resolved At Ms"
+    },
+    "confirmation_evidence_ms": {
+      "minimum": 0,
+      "title": "Confirmation Evidence Ms",
+      "type": "integer"
+    },
+    "clear_evidence_ms": {
+      "minimum": 0,
+      "title": "Clear Evidence Ms",
+      "type": "integer"
+    },
+    "reason_code": {
+      "enum": [
+        "persistent_zone_occupancy",
+        "observed_clear_interval"
+      ],
+      "title": "Reason Code",
+      "type": "string"
+    },
+    "last_positive_seq": {
+      "minimum": 0,
+      "title": "Last Positive Seq",
+      "type": "integer"
+    },
+    "evidence": {
+      "$ref": "#/$defs/Evidence"
+    }
+  },
+  "required": [
+    "schema_version",
+    "event_type",
+    "event_id",
+    "incident_id",
+    "run_id",
+    "camera_id",
+    "view_id",
+    "zone_id",
+    "hazard_type",
+    "phase",
+    "t_ms",
+    "first_seen_ms",
+    "confirmed_at_ms",
+    "resolved_at_ms",
+    "confirmation_evidence_ms",
+    "clear_evidence_ms",
+    "reason_code",
+    "last_positive_seq",
+    "evidence"
+  ],
+  "title": "HazardEvent",
+  "type": "object"
+}

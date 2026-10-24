@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ReferenceFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "title": "ReferenceFrame",
+      "type": "object"
+    },
+    "Zone": {
+      "additionalProperties": false,
+      "properties": {
+        "zone_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "hazard_type": {
+          "const": "blocked_exit",
+          "title": "Hazard Type",
+          "type": "string"
+        },
+        "polygon": {
+          "items": {
+            "items": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "minItems": 3,
+          "title": "Polygon",
+          "type": "array"
+        },
+        "candidate_labels": {
+          "items": {
+            "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Candidate Labels",
+          "type": "array"
+        },
+        "min_confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Min Confidence",
+          "type": "number"
+        },
+        "footprint_height_fraction": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Footprint Height Fraction",
+          "type": "number"
+        },
+        "enter_overlap": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Enter Overlap",
+          "type": "number"
+        },
+        "exit_overlap": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Exit Overlap",
+          "type": "number"
+        },
+        "person_occlusion_ratio": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Person Occlusion Ratio",
+          "type": "number"
+        },
+        "confirm_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Confirm Ms",
+          "type": "integer"
+        },
+        "candidate_clear_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Candidate Clear Ms",
+          "type": "integer"
+        },
+        "resolve_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Resolve Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "zone_id",
+        "hazard_type",
+        "polygon",
+        "candidate_labels",
+        "min_confidence",
+        "footprint_height_fraction",
+        "enter_overlap",
+        "exit_overlap",
+        "person_occlusion_ratio",
+        "confirm_ms",
+        "candidate_clear_ms",
+        "resolve_ms"
+      ],
+      "title": "Zone",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "camera_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "title": "Camera Id",
+      "type": "string"
+    },
+    "view_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "title": "View Id",
+      "type": "string"
+    },
+    "reference_frame": {
+      "$ref": "#/$defs/ReferenceFrame"
+    },
+    "max_observation_gap_ms": {
+      "exclusiveMinimum": 0,
+      "title": "Max Observation Gap Ms",
+      "type": "integer"
+    },
+    "live_stale_after_ms": {
+      "exclusiveMinimum": 0,
+      "title": "Live Stale After Ms",
+      "type": "integer"
+    },
+    "zones": {
+      "items": {
+        "$ref": "#/$defs/Zone"
+      },
+      "minItems": 1,
+      "title": "Zones",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "camera_id",
+    "view_id",
+    "reference_frame",
+    "max_observation_gap_ms",
+    "live_stale_after_ms",
+    "zones"
+  ],
+  "title": "ZoneConfig",
+  "type": "object"
+}

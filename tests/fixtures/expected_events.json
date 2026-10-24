@@ -1,0 +1,71 @@
+[
+  {
+    "schema_version": "1.0",
+    "event_type": "incident_confirmed",
+    "event_id": "7e37dbba-a8f3-51cc-9b1f-6ce1f36390b7",
+    "incident_id": "611244ea-49cf-5644-8685-f210219194e2",
+    "run_id": "01234567-89ab-4cde-8fab-0123456789ab",
+    "camera_id": "cam01",
+    "view_id": "exit-view-v1",
+    "zone_id": "east_exit",
+    "hazard_type": "blocked_exit",
+    "phase": "CONFIRMED",
+    "t_ms": 5000,
+    "first_seen_ms": 0,
+    "confirmed_at_ms": 5000,
+    "resolved_at_ms": null,
+    "confirmation_evidence_ms": 5000,
+    "clear_evidence_ms": 0,
+    "reason_code": "persistent_zone_occupancy",
+    "last_positive_seq": 25,
+    "evidence": {
+      "seq": 25,
+      "t_ms": 5000,
+      "frame_index": 150,
+      "frame_ref": null,
+      "tracker_epoch": 0,
+      "objects": [
+        {
+          "label": "chair",
+          "confidence": 0.91,
+          "bbox_xyxy": [
+            0.38,
+            0.28,
+            0.56,
+            0.84
+          ],
+          "track_id": "7",
+          "zone_overlap": 1.0
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": "1.0",
+    "event_type": "incident_resolved",
+    "event_id": "51da9bfa-b82e-59a8-a11c-7fd850547f10",
+    "incident_id": "611244ea-49cf-5644-8685-f210219194e2",
+    "run_id": "01234567-89ab-4cde-8fab-0123456789ab",
+    "camera_id": "cam01",
+    "view_id": "exit-view-v1",
+    "zone_id": "east_exit",
+    "hazard_type": "blocked_exit",
+    "phase": "RESOLVED",
+    "t_ms": 9200,
+    "first_seen_ms": 0,
+    "confirmed_at_ms": 5000,
+    "resolved_at_ms": 9200,
+    "confirmation_evidence_ms": 5000,
+    "clear_evidence_ms": 3000,
+    "reason_code": "observed_clear_interval",
+    "last_positive_seq": 30,
+    "evidence": {
+      "seq": 46,
+      "t_ms": 9200,
+      "frame_index": 276,
+      "frame_ref": null,
+      "tracker_epoch": 0,
+      "objects": []
+    }
+  }
+]

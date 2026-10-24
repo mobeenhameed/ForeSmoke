@@ -69,6 +69,26 @@ class Settings:
             else None
         )
     )
+    proposal_model: str = field(
+        default_factory=lambda: os.environ.get(
+            "FORESMOKE_PROPOSAL_MODEL", "claude-sonnet-5.5"
+        )
+    )
+    proposal_timeout_s: float = field(
+        default_factory=lambda: float(
+            os.environ.get("FORESMOKE_PROPOSAL_TIMEOUT_S", "90")
+        )
+    )
+    proposal_queue_capacity: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FORESMOKE_PROPOSAL_QUEUE_CAPACITY", "3")
+        )
+    )
+    proposal_max_image_dimension: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FORESMOKE_PROPOSAL_MAX_IMAGE_DIMENSION", "1280")
+        )
+    )
 
     @property
     def videos_dir(self) -> Path:
@@ -86,8 +106,19 @@ class Settings:
     def thumbs_dir(self) -> Path:
         return self.data_dir / "thumbs"
 
+    @property
+    def proposals_dir(self) -> Path:
+        return self.data_dir / "zone_proposals"
+
     def ensure(self) -> None:
-        for path in (self.videos_dir, self.zones_dir, self.run_meta_dir, self.thumbs_dir, self.runs_dir):
+        for path in (
+            self.videos_dir,
+            self.zones_dir,
+            self.run_meta_dir,
+            self.thumbs_dir,
+            self.proposals_dir,
+            self.runs_dir,
+        ):
             path.mkdir(parents=True, exist_ok=True)
 
 

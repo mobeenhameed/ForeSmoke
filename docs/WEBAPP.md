@@ -12,8 +12,7 @@ the video, zone and analysis controls in the workspace. The synthetic sample is 
 in Reviews, clearly labeled as synthetic.
 
 Search Reviews by recording or zone and filter for runs with or without findings. While analysis
-runs, the top bar shows progress even when the setup drawer is closed. **Download report** saves a JSON summary of the loaded run,
-including the exact source-video times, configured rules, and engine evidence for each finding.
+runs, the top bar shows progress even when the setup drawer is closed.
 
 The Videos tab automatically fetches the configured Git branch once when the page loads and has a
 **Sync GitHub videos** button for later pushes. It uses the checkout's existing Git remote and
@@ -48,6 +47,12 @@ on a shared network.
    disabled until the polygon is valid. The server then re-checks the zone with the engine's own
    validator. Detection parameters default to chair/backpack/suitcase, confirm 5.0 s,
    resolve 3.0 s and min confidence 0.35.
+   Alternatively, pause on a clear frame and click **Suggest access areas**. The app sends that
+   exact frame to the official Kiro CLI and shows returned floor polygons as purple dashed drafts.
+   Select a candidate, copy it into the normal vertex editor, adjust it if needed, and explicitly
+   save it. A suggestion never replaces a saved zone or starts analysis automatically. Manual
+   drawing remains available when Kiro is unavailable. For extinguisher access, the saved zone
+   remains associated with the separately identified extinguisher asset.
 4. **Run analysis:** progress counts analysed frames against duration × 5 Hz. Processing time
    (wall clock, dashed amber) is shown separately from source-video time (the blue clock and timeline).
    You can cancel a run. Each run gets its own `runs/<run-id>/` folder.
@@ -92,3 +97,27 @@ incident, confirmed at 13.2 s and resolved at 18.8 s. Clicking the card seeked t
 13.214 s, and the resolution marker seeked it to 18.817 s. I also checked the uncertainty badge
 during occlusion at 13.8 s, the "1.2 / 5.0 seconds of evidence" text, and cancelling a run.
 Safari and Firefox have not been tested.
+
+## AI-assisted access-area setup
+
+Install and authenticate the official `kiro-cli`, then launch the webapp normally. Proposal
+requests use a fresh read-only agent context that can read only the submitted frame and manifest.
+The default model is `claude-sonnet-5.5`.
+
+Optional environment variables:
+
+- `FORESMOKE_PROPOSAL_MODEL` (default `claude-sonnet-5.5`)
+- `FORESMOKE_PROPOSAL_TIMEOUT_S` (default `90`)
+- `FORESMOKE_PROPOSAL_QUEUE_CAPACITY` (default `3`)
+- `FORESMOKE_PROPOSAL_MAX_IMAGE_DIMENSION` (default `1280`)
+
+Proposal evidence and reproducibility metadata are stored under
+`webapp_data/zone_proposals/<job-id>/`. The submitted image is resized without cropping or
+letterboxing, and returned pixel coordinates are normalized by the application. The CLI's image
+reader may perform undocumented internal processing, so every polygon must still be checked
+against the frozen submitted frame.
+
+These polygons are model-generated drafts, not verified floor segmentation. Their front boundary
+is an estimated monitoring extent in an uncalibrated image; they do not establish physical
+clearance, depth, fire-door identity, or regulatory compliance. Temporary obstructions should be
+reported as visibility limitations rather than used to shrink the protected area.

@@ -11,6 +11,7 @@ export const COLORS = {
   saved: '#f2f4f7',
   draft: '#38d0ff',
   invalid: '#ff4d6d',
+  suggested: '#b17cff',
 };
 
 const toPx = (rect, [x, y]) => [rect.x + x * rect.w, rect.y + y * rect.h];
@@ -52,9 +53,13 @@ export function drawFrameBackdrop(ctx, rect, text) {
 }
 
 /** A saved or analysed zone outline, coloured by the engine status when one is known. */
-export function drawZone(ctx, rect, zone, zoneState, { dashed = false } = {}) {
+export function drawZone(ctx, rect, zone, zoneState, {
+  dashed = false,
+  colorKey = null,
+  showLabel = true,
+} = {}) {
   const status = zoneState ? statusOf(zoneState) : null;
-  const color = status ? COLORS[status.key] : COLORS.saved;
+  const color = COLORS[colorKey] || (status ? COLORS[status.key] : COLORS.saved);
   polygonPath(ctx, rect, zone.polygon);
   ctx.fillStyle = `${color}2e`;
   ctx.fill();
@@ -63,11 +68,13 @@ export function drawZone(ctx, rect, zone, zoneState, { dashed = false } = {}) {
   ctx.setLineDash(dashed ? [8, 6] : []);
   ctx.stroke();
   ctx.setLineDash([]);
-  const top = zone.polygon.reduce((best, p) => (p[1] < best[1] ? p : best), zone.polygon[0]);
-  const [x, y] = toPx(rect, top);
-  const label = status ? `${zone.zone_id} · ${status.label}` : `${zone.zone_id} · saved zone`;
-  tag(ctx, x - 4, y - 6, label, { fill: status ? color : 'rgba(12,16,22,0.82)',
-    color: status && status.key === 'possible' ? '#1b1300' : '#fff' });
+  if (showLabel) {
+    const top = zone.polygon.reduce((best, p) => (p[1] < best[1] ? p : best), zone.polygon[0]);
+    const [x, y] = toPx(rect, top);
+    const label = status ? `${zone.zone_id} · ${status.label}` : `${zone.zone_id} · saved zone`;
+    tag(ctx, x - 4, y - 6, label, { fill: status ? color : 'rgba(12,16,22,0.82)',
+      color: status && status.key === 'possible' ? '#1b1300' : '#fff' });
+  }
 }
 
 function box(ctx, rect, det, { color, width = 2, dashed = false, label }) {
@@ -155,6 +162,30 @@ export function drawDraft(ctx, rect, draft, validation) {
     ctx.fillText(String(i + 1), x, y + 3.5);
     ctx.textAlign = 'left';
   });
+}
+
+/** An unaccepted AI suggestion. It remains visually distinct from editable and saved geometry. */
+export function drawProposal(ctx, rect, candidate) {
+  const points = candidate?.access_polygon;
+  if (!points || points.length < 3) return;
+  polygonPath(ctx, rect, points);
+  ctx.fillStyle = 'rgba(177,124,255,0.13)';
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = COLORS.suggested;
+  ctx.setLineDash([9, 6]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  const top = points.reduce((best, point) => (point[1] < best[1] ? point : best), points[0]);
+  const [x, y] = toPx(rect, top);
+  tag(ctx, x - 4, y - 6, `${candidate.label} · AI draft`, {
+    fill: 'rgba(49,29,77,0.9)', border: COLORS.suggested,
+  });
+  if (candidate.asset_bbox) {
+    box(ctx, rect, { bbox_xyxy: candidate.asset_bbox }, {
+      color: COLORS.suggested, dashed: true, label: 'protected asset',
+    });
+  }
 }
 
 export { STATUS };

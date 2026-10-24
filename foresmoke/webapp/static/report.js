@@ -48,3 +48,73 @@ export function buildReport(view, generatedAt = new Date().toISOString()) {
     scope: 'Configured visual zone occupancy only. This report does not establish physical clearance or legal safety compliance.',
   };
 }
+
+const ascii = (value) => String(value ?? '—').normalize('NFKD').replace(/[^\x20-\x7e]/g, '?');
+const pdfEscape = (value) => ascii(value).replace(/([\\()])/g, '\\$1');
+
+function wrap(text, width = 88) {
+  const words = ascii(text).split(/\s+/);
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    if (!line) line = word;
+    else if (`${line} ${word}`.length <= width) line += ` ${word}`;
+    else { lines.push(line); line = word; }
+  }
+  if (line) lines.push(line);
+  return lines.length ? lines : [''];
+}
+
+/** Build a dependency-free, portable PDF summary. */
+export function buildPdfBlob(report) {
+  const lines = [
+    'ForeSmoke footage review',
+    `Generated: ${report.generated_at}`,
+    `Run: ${report.run_id}`,
+    `Source: ${report.source.name || 'synthetic or external'}`,
+    `Camera / view: ${report.camera_id || '-'} / ${report.view_id || '-'}`,
+    '',
+    `Confirmed: ${report.summary.confirmed}   Resolved: ${report.summary.resolved}   Open: ${report.summary.open}`,
+    '',
+  ];
+  for (const incident of report.incidents) {
+    lines.push(
+      `Incident ${incident.incident_id}`,
+      `Zone: ${incident.zone_id}   Objects: ${incident.object_labels.join(', ') || 'unspecified'}`,
+      `First seen: ${incident.first_seen_ms} ms   Confirmed: ${incident.confirmed_at_ms} ms   Resolved: ${incident.resolved_at_ms ?? 'not observed'}`,
+      `Reason: ${incident.confirmation_reason}`,
+      '',
+    );
+  }
+  lines.push(...wrap(report.scope));
+  const wrapped = lines.flatMap((line) => wrap(line));
+  const pageLines = [];
+  for (let index = 0; index < wrapped.length; index += 48) pageLines.push(wrapped.slice(index, index + 48));
+  if (!pageLines.length) pageLines.push(['ForeSmoke footage review']);
+
+  const fontId = 3 + pageLines.length * 2;
+  const pageIds = pageLines.map((_, index) => 3 + index * 2);
+  const objects = new Array(fontId + 1);
+  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objects[2] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] >>`;
+  pageLines.forEach((page, index) => {
+    const pageId = pageIds[index];
+    const contentId = pageId + 1;
+    const commands = `BT\n/F1 10 Tf\n46 760 Td\n13 TL\n${page.map((line) => `(${pdfEscape(line)}) Tj\nT*`).join('\n')}\nET`;
+    objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`;
+    objects[contentId] = `<< /Length ${commands.length} >>\nstream\n${commands}\nendstream`;
+  });
+  objects[fontId] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  for (let id = 1; id <= fontId; id += 1) {
+    offsets[id] = pdf.length;
+    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
+  }
+  const xref = pdf.length;
+  pdf += `xref\n0 ${fontId + 1}\n0000000000 65535 f \n`;
+  for (let id = 1; id <= fontId; id += 1) pdf += `${String(offsets[id]).padStart(10, '0')} 00000 n \n`;
+  pdf += `trailer\n<< /Size ${fontId + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return new Blob([pdf], { type: 'application/pdf' });
+}

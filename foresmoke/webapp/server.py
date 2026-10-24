@@ -4,11 +4,15 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 import logging
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+from foresmoke.scene_setup import SetupSettings, ZoneProposalService
+from foresmoke.scene_setup.service import ProposalQueueFull
 
 from . import videos as video_mod
 from . import zones as zone_mod
@@ -37,6 +41,25 @@ class ZoneRequest(BaseModel):
     polygon: list[list[float]]
     params: ZoneParams = Field(default_factory=ZoneParams)
     frame_t_ms: int | None = None
+    zone_type: Literal["exit_access", "extinguisher_access"] = "exit_access"
+    asset_name: str | None = None
+    asset_bbox: list[float] | None = None
+
+
+class ProposalRequest(BaseModel):
+    video_id: str
+    frame_t_ms: int = Field(ge=0)
+    requested_zone_type: Literal["auto", "exit_access", "extinguisher_access"] = "auto"
+
+
+class AcceptProposalRequest(BaseModel):
+    candidate_key: str
+    name: str
+    camera_name: str = "cam01"
+    view_name: str = "exit-view"
+    polygon: list[list[float]]
+    params: ZoneParams = Field(default_factory=ZoneParams)
+    asset_name: str | None = None
 
 
 class RunRequest(BaseModel):
@@ -51,13 +74,29 @@ def _id(value: str) -> str:
         raise HTTPException(400, str(error)) from error
 
 
-def create_app(settings: Settings | None = None, *, seed_sample: bool = True) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    *,
+    seed_sample: bool = True,
+    proposal_provider=None,
+) -> FastAPI:
     settings = settings or Settings()
     settings.ensure()
     video_store = video_mod.VideoStore(settings)
     github_videos = GitHubVideoSync(settings)
     zone_store = zone_mod.ZoneStore(settings)
     runs = RunManager(settings)
+    proposals = ZoneProposalService(
+        SetupSettings(
+            root=settings.proposals_dir,
+            cli_executable=settings.kiro_cli,
+            model=settings.proposal_model,
+            timeout_s=settings.proposal_timeout_s,
+            queue_capacity=settings.proposal_queue_capacity,
+            max_image_dimension=settings.proposal_max_image_dimension,
+        ),
+        provider=proposal_provider,
+    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -67,10 +106,11 @@ def create_app(settings: Settings | None = None, *, seed_sample: bool = True) ->
             except Exception:  # never block the UI on the optional sample
                 LOG.exception("could not seed the sample run")
         yield
+        proposals.shutdown()
         runs.shutdown()
 
     app = FastAPI(title="ForeSmoke review", lifespan=lifespan)
-    app.state.settings, app.state.runs = settings, runs
+    app.state.settings, app.state.runs, app.state.proposals = settings, runs, proposals
 
     def get_video(video_id: str) -> dict:
         try:
@@ -142,7 +182,12 @@ def create_app(settings: Settings | None = None, *, seed_sample: bool = True) ->
         config = zone_mod.build_zone_config(
             camera_id="cam01", view_id="preview", width=video["width"], height=video["height"],
             zone_id=zone_mod.slug(request.name, "exit_zone"), polygon=request.polygon,
-            params=request.params.model_dump())
+            params=request.params.model_dump(), zone_type=request.zone_type,
+            asset_id=(
+                zone_mod.slug(f"{request.name}-extinguisher", "fire-extinguisher")
+                if request.zone_type == "extinguisher_access" else None
+            ),
+            asset_name=request.asset_name, asset_bbox=request.asset_bbox)
         return video, config
 
     @app.post("/api/zones/validate")
@@ -160,9 +205,109 @@ def create_app(settings: Settings | None = None, *, seed_sample: bool = True) ->
         try:
             item = zone_store.save(video=video, name=request.name, camera_name=request.camera_name,
                                    view_name=request.view_name, polygon=request.polygon,
-                                   params=request.params.model_dump(), frame_t_ms=request.frame_t_ms)
+                                   params=request.params.model_dump(), frame_t_ms=request.frame_t_ms,
+                                   zone_type=request.zone_type, asset_name=request.asset_name,
+                                   asset_bbox=request.asset_bbox)
         except zone_mod.ZoneError as error:
             raise HTTPException(422, str(error)) from error
+        return zone_mod.public(item)
+
+    # -- AI-assisted zone proposals ---------------------------------------------------------
+    @app.post("/api/zone-proposals")
+    def create_zone_proposal(request: ProposalRequest):
+        video = get_video(request.video_id)
+        try:
+            return proposals.submit(
+                video=video,
+                requested_t_ms=request.frame_t_ms,
+                requested_zone_type=request.requested_zone_type,
+            )
+        except ProposalQueueFull as error:
+            raise HTTPException(429, str(error)) from error
+
+    @app.get("/api/zone-proposals/{job_id}")
+    def zone_proposal_status(job_id: str):
+        try:
+            return proposals.status(_id(job_id))
+        except KeyError:
+            raise HTTPException(404, "Zone proposal not found") from None
+
+    @app.get("/api/zone-proposals/{job_id}/frame")
+    def zone_proposal_frame(job_id: str):
+        try:
+            record = proposals.status(_id(job_id))
+        except KeyError:
+            raise HTTPException(404, "Zone proposal not found") from None
+        path = settings.proposals_dir / record["job_id"] / "submitted_frame.jpg"
+        if record.get("source_frame") is None or not path.exists():
+            raise HTTPException(404, "Proposal frame is not available yet")
+        return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+    @app.post("/api/zone-proposals/{job_id}/cancel")
+    def cancel_zone_proposal(job_id: str):
+        try:
+            return proposals.cancel(_id(job_id))
+        except KeyError:
+            raise HTTPException(404, "Zone proposal not found") from None
+
+    @app.post("/api/zone-proposals/{job_id}/accept")
+    def accept_zone_proposal(job_id: str, request: AcceptProposalRequest):
+        try:
+            proposal = proposals.status(_id(job_id))
+        except KeyError:
+            raise HTTPException(404, "Zone proposal not found") from None
+        if proposal["status"] != "completed":
+            raise HTTPException(409, "Only a completed proposal can be accepted")
+        candidate = next(
+            (
+                item for item in proposal["candidates"]
+                if item["candidate_key"] == request.candidate_key
+            ),
+            None,
+        )
+        if candidate is None:
+            raise HTTPException(404, "Proposal candidate not found")
+        if not candidate["valid"] or candidate["access_polygon"] is None:
+            raise HTTPException(422, "This candidate has no valid access polygon")
+        video = get_video(proposal["video_id"])
+        source = proposal["source_frame"] or {}
+        proposed = [[round(float(x), 6), round(float(y), 6)] for x, y in candidate["access_polygon"]]
+        accepted = [[round(float(x), 6), round(float(y), 6)] for x, y in request.polygon]
+        provenance = {
+            "job_id": job_id,
+            "candidate_key": request.candidate_key,
+            "requested_model": proposal["requested_model"],
+            "source_timestamp_ms": source.get("source_timestamp_ms"),
+            "source_frame_index": source.get("source_frame_index"),
+            "submitted_image_sha256": source.get("submitted_image_sha256"),
+            "user_edited": accepted != proposed,
+        }
+        try:
+            item = zone_store.save(
+                video=video,
+                name=request.name,
+                camera_name=request.camera_name,
+                view_name=request.view_name,
+                polygon=accepted,
+                params=request.params.model_dump(),
+                frame_t_ms=source.get("source_timestamp_ms"),
+                zone_type=candidate["zone_type"],
+                asset_name=(
+                    request.asset_name or candidate["label"]
+                    if candidate["zone_type"] == "extinguisher_access"
+                    else None
+                ),
+                asset_bbox=candidate["asset_bbox"],
+                provenance=provenance,
+            )
+        except zone_mod.ZoneError as error:
+            raise HTTPException(422, str(error)) from error
+        proposals.record_acceptance(
+            job_id,
+            candidate_key=request.candidate_key,
+            config_id=item["config_id"],
+            user_edited=provenance["user_edited"],
+        )
         return zone_mod.public(item)
 
     # -- runs ------------------------------------------------------------------------------

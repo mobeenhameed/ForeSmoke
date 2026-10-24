@@ -1,0 +1,11 @@
+[
+  {"video_id":"sample-Cam1","name":"Cam1.mp4","kind":"sample","static_url":"/videos/Cam1.mp4","duration_s":73.073,"width":640,"height":480,"fps":29.969893,"frame_count":2190},
+  {"video_id":"sample-Cam2","name":"Cam2.mp4","kind":"sample","static_url":"/videos/Cam2.mp4","duration_s":110.043,"width":720,"height":480,"fps":29.970012,"frame_count":3298},
+  {"video_id":"sample-Cam3","name":"Cam3.mp4","kind":"sample","static_url":"/videos/Cam3.mp4","duration_s":225.058,"width":720,"height":480,"fps":29.970008,"frame_count":6745},
+  {"video_id":"sample-Cam4","name":"Cam4.mp4","kind":"sample","static_url":"/videos/Cam4.mp4","duration_s":75.442,"width":720,"height":480,"fps":29.970176,"frame_count":2261},
+  {"video_id":"sample-chair","name":"chair.mp4","kind":"sample","static_url":"/videos/chair.mp4","duration_s":17.558,"width":464,"height":832,"fps":59.971523,"frame_count":1053},
+  {"video_id":"sample-chair_2","name":"chair_2.mp4","kind":"sample","static_url":"/videos/chair_2.mp4","duration_s":25.695,"width":464,"height":832,"fps":59.972757,"frame_count":1541},
+  {"video_id":"sample-chair_back","name":"chair_back.mp4","kind":"sample","static_url":"/videos/chair_back.mp4","duration_s":35.367,"width":464,"height":832,"fps":59.971725,"frame_count":2121},
+  {"video_id":"sample-chair_front","name":"chair_front.mp4","kind":"sample","static_url":"/videos/chair_front.mp4","duration_s":32.282,"width":464,"height":832,"fps":59.97212,"frame_count":1936},
+  {"video_id":"sample-extinguisher","name":"extinguisher.mp4","kind":"sample","static_url":"/videos/extinguisher.mp4","duration_s":24.148,"width":464,"height":832,"fps":59.879909,"frame_count":1446}
+]

@@ -23,7 +23,7 @@ class Settings:
     repo_root: Path = REPO_ROOT
     data_dir: Path = field(default_factory=lambda: Path(os.environ.get("FORESMOKE_WEBAPP_DATA", REPO_ROOT / "webapp_data")))
     runs_dir: Path = field(default_factory=lambda: Path(os.environ.get("FORESMOKE_RUNS_DIR", REPO_ROOT / "runs")))
-    sample_videos_dir: Path = REPO_ROOT
+    sample_videos_dir: Path = REPO_ROOT / "public" / "videos"
     bundled_zones: Path = REPO_ROOT / "configs" / "zones.json"
     target_hz: float = 5.0
     github_branch: str = field(default_factory=lambda: os.environ.get("FORESMOKE_GITHUB_BRANCH", "webapp-mvp"))

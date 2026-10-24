@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "app.py": {
+      "includeFiles": "{foresmoke/**,configs/**}",
+      "maxDuration": 300
+    }
+  }
+}

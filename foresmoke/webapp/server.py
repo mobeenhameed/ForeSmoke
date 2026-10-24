@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -153,7 +153,10 @@ def create_app(
     @app.get("/api/videos/{video_id}/file")
     def video_file(video_id: str):
         # FileResponse honours HTTP Range requests, which the <video> element needs to seek.
-        return FileResponse(get_video(video_id)["path"])
+        video = get_video(video_id)
+        if static_url := video.get("static_url"):
+            return RedirectResponse(static_url, status_code=307)
+        return FileResponse(video["path"])
 
     @app.get("/api/videos/{video_id}/frame")
     def video_frame(video_id: str, t_ms: int = Query(..., ge=0), width: int = Query(360, ge=64, le=1280)):

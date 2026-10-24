@@ -1262,6 +1262,7 @@ async function boot() {
   renderReviewSummary();
   renderOverview();
   renderVideoCatalog();
+  renderLiveGrid();
   showPage('overview');
   const running = state.runs.find((r) => r.state === 'running');
   if (running) trackRun(running.run_id);

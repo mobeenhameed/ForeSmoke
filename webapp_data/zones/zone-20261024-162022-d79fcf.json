@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "camera_id": "cam01",
+  "view_id": "exit-view-d79fcf",
+  "reference_frame": {
+    "width": 464,
+    "height": 832
+  },
+  "max_observation_gap_ms": 1000,
+  "live_stale_after_ms": 2000,
+  "assets": [],
+  "zones": [
+    {
+      "zone_id": "east_exit",
+      "name": "East Exit",
+      "zone_type": "exit_access",
+      "hazard_type": "blocked_exit",
+      "protected_asset_id": null,
+      "polygon": [
+        [
+          0.325887,
+          0.776193
+        ],
+        [
+          0.478344,
+          0.70856
+        ],
+        [
+          0.779793,
+          0.755903
+        ],
+        [
+          0.634266,
+          0.838995
+        ]
+      ],
+      "candidate_labels": [
+        "chair",
+        "backpack",
+        "suitcase"
+      ],
+      "min_confidence": 0.35,
+      "footprint_height_fraction": 0.2,
+      "enter_overlap": 0.3,
+      "exit_overlap": 0.15,
+      "person_occlusion_ratio": 0.2,
+      "confirm_ms": 5000,
+      "candidate_clear_ms": 1000,
+      "resolve_ms": 3000
+    }
+  ]
+}

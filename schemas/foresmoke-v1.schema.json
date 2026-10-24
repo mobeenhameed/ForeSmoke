@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ForeSmoke 1.0 shared exchange contract",
+  "title": "ForeSmoke shared exchange contract",
   "oneOf": [
     {
       "$ref": "#/$defs/FrameObservation"
@@ -17,133 +17,178 @@
   ],
   "$defs": {
     "Detection": {
-      "type": "object",
       "additionalProperties": false,
+      "properties": {
+        "label": {
+          "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Label",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "bbox_xyxy": {
+          "items": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox Xyxy",
+          "type": "array"
+        },
+        "track_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Track Id"
+        }
+      },
       "required": [
         "label",
         "confidence",
         "bbox_xyxy",
         "track_id"
       ],
-      "properties": {
-        "label": {
-          "type": "string",
-          "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
-        },
-        "confidence": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "bbox_xyxy": {
-          "type": "array",
-          "items": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          },
-          "minItems": 4,
-          "maxItems": 4
-        },
-        "track_id": {
-          "anyOf": [
-            {
-              "type": "string",
-              "minLength": 1
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      }
-    },
-    "Candidate": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "label",
-        "confidence",
-        "bbox_xyxy",
-        "track_id",
-        "zone_overlap"
-      ],
-      "properties": {
-        "label": {
-          "type": "string",
-          "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
-        },
-        "confidence": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "bbox_xyxy": {
-          "type": "array",
-          "items": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          },
-          "minItems": 4,
-          "maxItems": 4
-        },
-        "track_id": {
-          "anyOf": [
-            {
-              "type": "string",
-              "minLength": 1
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "zone_overlap": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        }
-      }
+      "title": "Detection",
+      "type": "object"
     },
     "FrameMeta": {
-      "type": "object",
       "additionalProperties": false,
+      "properties": {
+        "index": {
+          "minimum": 0,
+          "title": "Index",
+          "type": "integer"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
+        },
+        "frame_ref": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Frame Ref"
+        }
+      },
       "required": [
         "index",
         "width",
         "height",
         "frame_ref"
       ],
+      "title": "FrameMeta",
+      "type": "object"
+    },
+    "FrameObservation": {
+      "additionalProperties": false,
       "properties": {
-        "index": {
-          "type": "integer",
-          "minimum": 0
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
         },
-        "width": {
-          "type": "integer",
-          "minimum": 1
+        "run_id": {
+          "format": "uuid",
+          "title": "Run Id",
+          "type": "string"
         },
-        "height": {
-          "type": "integer",
-          "minimum": 1
+        "camera_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Camera Id",
+          "type": "string"
         },
-        "frame_ref": {
+        "view_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "View Id",
+          "type": "string"
+        },
+        "source_kind": {
+          "enum": [
+            "live",
+            "video",
+            "image"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "seq": {
+          "minimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "tracker_epoch": {
+          "minimum": 0,
+          "title": "Tracker Epoch",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "unavailable",
+            "eof"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "frame": {
           "anyOf": [
             {
-              "type": "string",
-              "minLength": 1
+              "$ref": "#/$defs/FrameMeta"
             },
             {
               "type": "null"
             }
           ]
+        },
+        "detections": {
+          "items": {
+            "$ref": "#/$defs/Detection"
+          },
+          "title": "Detections",
+          "type": "array"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error"
         }
-      }
-    },
-    "FrameObservation": {
-      "type": "object",
-      "additionalProperties": false,
+      },
       "required": [
         "schema_version",
         "run_id",
@@ -158,160 +203,246 @@
         "detections",
         "error"
       ],
+      "title": "FrameObservation",
+      "type": "object"
+    },
+    "ProtectedAsset": {
+      "additionalProperties": false,
       "properties": {
-        "schema_version": {
-          "const": "1.0"
+        "asset_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Asset Id",
+          "type": "string"
         },
-        "run_id": {
-          "type": "string",
-          "format": "uuid"
+        "asset_type": {
+          "const": "fire_extinguisher",
+          "title": "Asset Type",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
         },
         "camera_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Camera Id",
+          "type": "string"
         },
         "view_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "View Id",
+          "type": "string"
         },
-        "source_kind": {
-          "enum": [
-            "live",
-            "video",
-            "image"
-          ]
-        },
-        "seq": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "t_ms": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "tracker_epoch": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "status": {
-          "enum": [
-            "ok",
-            "unavailable",
-            "eof"
-          ]
-        },
-        "frame": {
+        "bbox_xyxy": {
           "anyOf": [
             {
-              "$ref": "#/$defs/FrameMeta"
+              "items": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "maxItems": 4,
+              "minItems": 4,
+              "type": "array"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Bbox Xyxy"
         },
-        "detections": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Detection"
-          },
-          "minItems": 0
-        },
-        "error": {
+        "point": {
           "anyOf": [
             {
-              "type": "string",
-              "minLength": 1
+              "items": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Point"
+        },
+        "reference_image_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Image Id"
         }
       },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "status": {
-                "const": "ok"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "frame": {
-                "$ref": "#/$defs/FrameMeta"
-              },
-              "error": {
-                "type": "null"
-              }
-            }
-          }
+      "required": [
+        "asset_id",
+        "asset_type",
+        "name",
+        "camera_id",
+        "view_id"
+      ],
+      "title": "ProtectedAsset",
+      "type": "object"
+    },
+    "ReferenceFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "exclusiveMinimum": 0,
+          "title": "Width",
+          "type": "integer"
         },
-        {
-          "if": {
-            "properties": {
-              "status": {
-                "enum": [
-                  "unavailable",
-                  "eof"
-                ]
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "frame": {
-                "type": "null"
-              },
-              "detections": {
-                "maxItems": 0
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "status": {
-                "const": "unavailable"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "error": {
-                "type": "string",
-                "minLength": 1
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "status": {
-                "const": "eof"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "error": {
-                "type": "null"
-              }
-            }
-          }
+        "height": {
+          "exclusiveMinimum": 0,
+          "title": "Height",
+          "type": "integer"
         }
-      ]
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "title": "ReferenceFrame",
+      "type": "object"
     },
     "Zone": {
-      "type": "object",
       "additionalProperties": false,
+      "properties": {
+        "zone_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "zone_type": {
+          "default": "exit_access",
+          "enum": [
+            "exit_access",
+            "extinguisher_access"
+          ],
+          "title": "Zone Type",
+          "type": "string"
+        },
+        "hazard_type": {
+          "default": "blocked_exit",
+          "enum": [
+            "blocked_exit",
+            "blocked_extinguisher_access"
+          ],
+          "title": "Hazard Type",
+          "type": "string"
+        },
+        "protected_asset_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protected Asset Id"
+        },
+        "polygon": {
+          "items": {
+            "items": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "minItems": 3,
+          "title": "Polygon",
+          "type": "array"
+        },
+        "candidate_labels": {
+          "items": {
+            "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Candidate Labels",
+          "type": "array"
+        },
+        "min_confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Min Confidence",
+          "type": "number"
+        },
+        "footprint_height_fraction": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Footprint Height Fraction",
+          "type": "number"
+        },
+        "enter_overlap": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Enter Overlap",
+          "type": "number"
+        },
+        "exit_overlap": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Exit Overlap",
+          "type": "number"
+        },
+        "person_occlusion_ratio": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Person Occlusion Ratio",
+          "type": "number"
+        },
+        "confirm_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Confirm Ms",
+          "type": "integer"
+        },
+        "candidate_clear_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Candidate Clear Ms",
+          "type": "integer"
+        },
+        "resolve_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Resolve Ms",
+          "type": "integer"
+        }
+      },
       "required": [
         "zone_id",
-        "hazard_type",
         "polygon",
         "candidate_labels",
         "min_confidence",
@@ -323,79 +454,56 @@
         "candidate_clear_ms",
         "resolve_ms"
       ],
-      "properties": {
-        "zone_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
-        },
-        "hazard_type": {
-          "const": "blocked_exit"
-        },
-        "polygon": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1
-            },
-            "minItems": 2,
-            "maxItems": 2
-          },
-          "minItems": 3
-        },
-        "candidate_labels": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
-          },
-          "minItems": 1,
-          "uniqueItems": true
-        },
-        "min_confidence": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "footprint_height_fraction": {
-          "type": "number",
-          "exclusiveMinimum": 0,
-          "maximum": 1
-        },
-        "enter_overlap": {
-          "type": "number",
-          "exclusiveMinimum": 0,
-          "maximum": 1
-        },
-        "exit_overlap": {
-          "type": "number",
-          "exclusiveMinimum": 0,
-          "maximum": 1
-        },
-        "person_occlusion_ratio": {
-          "type": "number",
-          "exclusiveMinimum": 0,
-          "maximum": 1
-        },
-        "confirm_ms": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "candidate_clear_ms": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "resolve_ms": {
-          "type": "integer",
-          "minimum": 1
-        }
-      }
+      "title": "Zone",
+      "type": "object"
     },
     "ZoneConfig": {
-      "type": "object",
       "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "camera_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Camera Id",
+          "type": "string"
+        },
+        "view_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "View Id",
+          "type": "string"
+        },
+        "reference_frame": {
+          "$ref": "#/$defs/ReferenceFrame"
+        },
+        "max_observation_gap_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Max Observation Gap Ms",
+          "type": "integer"
+        },
+        "live_stale_after_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Live Stale After Ms",
+          "type": "integer"
+        },
+        "assets": {
+          "items": {
+            "$ref": "#/$defs/ProtectedAsset"
+          },
+          "title": "Assets",
+          "type": "array"
+        },
+        "zones": {
+          "items": {
+            "$ref": "#/$defs/Zone"
+          },
+          "minItems": 1,
+          "title": "Zones",
+          "type": "array"
+        }
+      },
       "required": [
         "schema_version",
         "camera_id",
@@ -405,56 +513,106 @@
         "live_stale_after_ms",
         "zones"
       ],
+      "title": "ZoneConfig",
+      "type": "object"
+    },
+    "Candidate": {
+      "additionalProperties": false,
       "properties": {
-        "schema_version": {
-          "const": "1.0"
+        "label": {
+          "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$",
+          "title": "Label",
+          "type": "string"
         },
-        "camera_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
         },
-        "view_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
-        },
-        "reference_frame": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "width",
-            "height"
-          ],
-          "properties": {
-            "width": {
-              "type": "integer",
-              "minimum": 1
-            },
-            "height": {
-              "type": "integer",
-              "minimum": 1
-            }
-          }
-        },
-        "max_observation_gap_ms": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "live_stale_after_ms": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "zones": {
-          "type": "array",
+        "bbox_xyxy": {
           "items": {
-            "$ref": "#/$defs/Zone"
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
           },
-          "minItems": 1
+          "maxItems": 4,
+          "minItems": 4,
+          "title": "Bbox Xyxy",
+          "type": "array"
+        },
+        "track_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Track Id"
+        },
+        "zone_overlap": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Zone Overlap",
+          "type": "number"
         }
-      }
+      },
+      "required": [
+        "label",
+        "confidence",
+        "bbox_xyxy",
+        "track_id",
+        "zone_overlap"
+      ],
+      "title": "Candidate",
+      "type": "object"
     },
     "Evidence": {
-      "type": "object",
       "additionalProperties": false,
+      "properties": {
+        "seq": {
+          "minimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "frame_index": {
+          "minimum": 0,
+          "title": "Frame Index",
+          "type": "integer"
+        },
+        "frame_ref": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Frame Ref"
+        },
+        "tracker_epoch": {
+          "minimum": 0,
+          "title": "Tracker Epoch",
+          "type": "integer"
+        },
+        "objects": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "title": "Objects",
+          "type": "array"
+        }
+      },
       "required": [
         "seq",
         "t_ms",
@@ -463,46 +621,236 @@
         "tracker_epoch",
         "objects"
       ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "HazardEvent": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "schema_version": {
+                "const": "1.1"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "zone_name",
+              "zone_type",
+              "protected_asset_id",
+              "protected_asset_name",
+              "remediation"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schema_version": {
+                "const": "1.0"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "hazard_type": {
+                "const": "blocked_exit"
+              },
+              "zone_type": {
+                "const": "exit_access"
+              },
+              "protected_asset_id": {
+                "type": "null"
+              },
+              "protected_asset_name": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ],
       "properties": {
-        "seq": {
-          "type": "integer",
-          "minimum": 0
+        "schema_version": {
+          "enum": [
+            "1.0",
+            "1.1"
+          ],
+          "title": "Schema Version",
+          "type": "string"
         },
-        "t_ms": {
-          "type": "integer",
-          "minimum": 0
+        "event_type": {
+          "enum": [
+            "incident_confirmed",
+            "incident_resolved"
+          ],
+          "title": "Event Type",
+          "type": "string"
         },
-        "frame_index": {
-          "type": "integer",
-          "minimum": 0
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
         },
-        "frame_ref": {
+        "incident_id": {
+          "format": "uuid",
+          "title": "Incident Id",
+          "type": "string"
+        },
+        "run_id": {
+          "format": "uuid",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "camera_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Camera Id",
+          "type": "string"
+        },
+        "view_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "View Id",
+          "type": "string"
+        },
+        "zone_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "hazard_type": {
+          "enum": [
+            "blocked_exit",
+            "blocked_extinguisher_access"
+          ],
+          "title": "Hazard Type",
+          "type": "string"
+        },
+        "zone_name": {
           "anyOf": [
             {
-              "type": "string",
-              "minLength": 1
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
             },
             {
               "type": "null"
             }
-          ]
+          ],
+          "default": null,
+          "title": "Zone Name"
         },
-        "tracker_epoch": {
-          "type": "integer",
-          "minimum": 0
+        "zone_type": {
+          "default": "exit_access",
+          "enum": [
+            "exit_access",
+            "extinguisher_access"
+          ],
+          "title": "Zone Type",
+          "type": "string"
         },
-        "objects": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Candidate"
-          },
-          "minItems": 0
+        "protected_asset_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protected Asset Id"
+        },
+        "protected_asset_name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protected Asset Name"
+        },
+        "remediation": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remediation"
+        },
+        "phase": {
+          "enum": [
+            "CONFIRMED",
+            "RESOLVED"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "t_ms": {
+          "minimum": 0,
+          "title": "T Ms",
+          "type": "integer"
+        },
+        "first_seen_ms": {
+          "minimum": 0,
+          "title": "First Seen Ms",
+          "type": "integer"
+        },
+        "confirmed_at_ms": {
+          "minimum": 0,
+          "title": "Confirmed At Ms",
+          "type": "integer"
+        },
+        "resolved_at_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Resolved At Ms"
+        },
+        "confirmation_evidence_ms": {
+          "minimum": 0,
+          "title": "Confirmation Evidence Ms",
+          "type": "integer"
+        },
+        "clear_evidence_ms": {
+          "minimum": 0,
+          "title": "Clear Evidence Ms",
+          "type": "integer"
+        },
+        "reason_code": {
+          "enum": [
+            "persistent_zone_occupancy",
+            "observed_clear_interval"
+          ],
+          "title": "Reason Code",
+          "type": "string"
+        },
+        "last_positive_seq": {
+          "minimum": 0,
+          "title": "Last Positive Seq",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
         }
-      }
-    },
-    "HazardEvent": {
-      "type": "object",
-      "additionalProperties": false,
+      },
       "required": [
         "schema_version",
         "event_type",
@@ -524,162 +872,254 @@
         "last_positive_seq",
         "evidence"
       ],
-      "properties": {
-        "schema_version": {
-          "const": "1.0"
-        },
-        "event_type": {
-          "enum": [
-            "incident_confirmed",
-            "incident_resolved"
-          ]
-        },
-        "event_id": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "incident_id": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "run_id": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "camera_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
-        },
-        "view_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
-        },
-        "zone_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
-        },
-        "hazard_type": {
-          "const": "blocked_exit"
-        },
-        "phase": {
-          "enum": [
-            "CONFIRMED",
-            "RESOLVED"
-          ]
-        },
-        "t_ms": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "first_seen_ms": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "confirmed_at_ms": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "resolved_at_ms": {
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 0
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "confirmation_evidence_ms": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "clear_evidence_ms": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "reason_code": {
-          "enum": [
-            "persistent_zone_occupancy",
-            "observed_clear_interval"
-          ]
-        },
-        "last_positive_seq": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "evidence": {
-          "$ref": "#/$defs/Evidence"
-        }
-      },
+      "title": "HazardEvent",
+      "type": "object"
+    },
+    "ZoneState": {
+      "additionalProperties": false,
       "allOf": [
         {
           "if": {
             "properties": {
-              "event_type": {
-                "const": "incident_confirmed"
+              "schema_version": {
+                "const": "1.1"
               }
             }
           },
           "then": {
-            "properties": {
-              "phase": {
-                "const": "CONFIRMED"
-              },
-              "resolved_at_ms": {
-                "type": "null"
-              },
-              "clear_evidence_ms": {
-                "const": 0
-              },
-              "reason_code": {
-                "const": "persistent_zone_occupancy"
-              },
-              "evidence": {
-                "properties": {
-                  "objects": {
-                    "minItems": 1
-                  }
-                }
-              }
-            }
+            "required": [
+              "zone_name",
+              "zone_type",
+              "hazard_type",
+              "protected_asset_id",
+              "protected_asset_name",
+              "remediation",
+              "monitoring_objective"
+            ]
           }
         },
         {
           "if": {
             "properties": {
-              "event_type": {
-                "const": "incident_resolved"
+              "schema_version": {
+                "const": "1.0"
               }
             }
           },
           "then": {
             "properties": {
-              "phase": {
-                "const": "RESOLVED"
+              "hazard_type": {
+                "const": "blocked_exit"
               },
-              "resolved_at_ms": {
-                "type": "integer",
-                "minimum": 0
+              "zone_type": {
+                "const": "exit_access"
               },
-              "reason_code": {
-                "const": "observed_clear_interval"
+              "protected_asset_id": {
+                "type": "null"
               },
-              "evidence": {
-                "properties": {
-                  "objects": {
-                    "maxItems": 0
-                  }
-                }
+              "protected_asset_name": {
+                "type": "null"
               }
             }
           }
         }
-      ]
-    },
-    "ZoneState": {
-      "type": "object",
-      "additionalProperties": false,
+      ],
+      "properties": {
+        "schema_version": {
+          "enum": [
+            "1.0",
+            "1.1"
+          ],
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Run Id"
+        },
+        "camera_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Camera Id",
+          "type": "string"
+        },
+        "view_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "View Id",
+          "type": "string"
+        },
+        "zone_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "zone_name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zone Name"
+        },
+        "zone_type": {
+          "default": "exit_access",
+          "enum": [
+            "exit_access",
+            "extinguisher_access"
+          ],
+          "title": "Zone Type",
+          "type": "string"
+        },
+        "hazard_type": {
+          "default": "blocked_exit",
+          "enum": [
+            "blocked_exit",
+            "blocked_extinguisher_access"
+          ],
+          "title": "Hazard Type",
+          "type": "string"
+        },
+        "protected_asset_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protected Asset Id"
+        },
+        "protected_asset_name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protected Asset Name"
+        },
+        "remediation": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remediation"
+        },
+        "monitoring_objective": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Monitoring Objective"
+        },
+        "phase": {
+          "enum": [
+            "CLEAR",
+            "POSSIBLE",
+            "CONFIRMED",
+            "RESOLVED"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "observation_state": {
+          "enum": [
+            "observed",
+            "unknown"
+          ],
+          "title": "Observation State",
+          "type": "string"
+        },
+        "observation_reason": {
+          "enum": [
+            "positive",
+            "negative",
+            "initializing",
+            "source_unavailable",
+            "source_ended",
+            "occluded",
+            "stale_input",
+            "observation_gap",
+            "invalid_input"
+          ],
+          "title": "Observation Reason",
+          "type": "string"
+        },
+        "incident_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Incident Id"
+        },
+        "t_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "T Ms"
+        },
+        "positive_evidence_ms": {
+          "minimum": 0,
+          "title": "Positive Evidence Ms",
+          "type": "integer"
+        },
+        "negative_run_ms": {
+          "minimum": 0,
+          "title": "Negative Run Ms",
+          "type": "integer"
+        },
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "title": "Candidates",
+          "type": "array"
+        }
+      },
       "required": [
         "schema_version",
         "run_id",
@@ -695,99 +1135,8 @@
         "negative_run_ms",
         "candidates"
       ],
-      "properties": {
-        "schema_version": {
-          "const": "1.0"
-        },
-        "run_id": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "uuid"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "camera_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
-        },
-        "view_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
-        },
-        "zone_id": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
-        },
-        "phase": {
-          "enum": [
-            "CLEAR",
-            "POSSIBLE",
-            "CONFIRMED",
-            "RESOLVED"
-          ]
-        },
-        "observation_state": {
-          "enum": [
-            "observed",
-            "unknown"
-          ]
-        },
-        "observation_reason": {
-          "enum": [
-            "positive",
-            "negative",
-            "initializing",
-            "source_unavailable",
-            "source_ended",
-            "occluded",
-            "stale_input",
-            "observation_gap",
-            "invalid_input"
-          ]
-        },
-        "incident_id": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "uuid"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "t_ms": {
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 0
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "positive_evidence_ms": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "negative_run_ms": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "candidates": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Candidate"
-          },
-          "minItems": 0
-        }
-      }
+      "title": "ZoneState",
+      "type": "object"
     }
   }
 }
-

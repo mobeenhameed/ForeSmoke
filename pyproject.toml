@@ -7,20 +7,37 @@ name = "foresmoke"
 version = "0.1.0"
 description = "ForeSmoke deterministic perception-to-incident reasoning MVP"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2,<3"]
+dependencies = [
+    "fastapi>=0.162,<0.163",
+    "numpy>=1.26",
+    "opencv-python-headless>=4.8",
+    "pydantic>=2,<3",
+    "python-multipart>=0.0.32,<0.0.33",
+    "shapely>=2,<3",
+]
 
 [project.optional-dependencies]
 perception = ["opencv-python>=4.8", "numpy>=1.26", "ultralytics>=8.3"]
 reasoning = ["shapely>=2,<3"]
-dev = ["pytest>=8,<10", "jsonschema>=4,<5"]
+dev = ["pytest>=8,<10", "jsonschema>=4,<5", "httpx>=0.28,<0.29"]
+# lap is Ultralytics' ByteTrack dependency; installing it up front avoids a runtime auto-install
+# during the first analysis started from the browser.
+webapp = ["fastapi>=0.162,<0.163", "uvicorn>=0.54,<0.55", "python-multipart>=0.0.32,<0.0.33", "lap>=0.5.13,<0.6"]
 
 [project.scripts]
 foresmoke-perception = "foresmoke.perception.cli:main"
 foresmoke-reason = "foresmoke.reasoning.__main__:main"
 foresmoke-annotate = "foresmoke.annotate:main"
+foresmoke-webapp = "foresmoke.webapp.__main__:main"
+
+[tool.vercel]
+entrypoint = "app:app"
 
 [tool.setuptools.packages.find]
 include = ["foresmoke*"]
+
+[tool.setuptools.package-data]
+"foresmoke.webapp" = ["static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def command(tmp_path, input_path):
     return [sys.executable, "-m", "foresmoke.reasoning", "--input", str(input_path),
-            "--zones", str(ROOT / "configs/zones.json"), "--events", str(tmp_path / "events.jsonl"),
+            "--zones", str(ROOT / "tests/fixtures/zones.json"), "--events", str(tmp_path / "events.jsonl"),
             "--snapshots", str(tmp_path / "states.jsonl")]
 
 def read(path):

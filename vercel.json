@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "app.py": {
+      "includeFiles": "{foresmoke/**,configs/**,webapp_data/runs/**,webapp_data/zones/**,webapp_data/thumbs/**,runs/run-*/**}",
+      "maxDuration": 300
+    }
+  }
+}

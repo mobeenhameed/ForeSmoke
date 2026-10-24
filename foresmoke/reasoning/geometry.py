@@ -22,6 +22,9 @@ def classify(detections: list[Detection], zone: Zone, phase: Phase,
     person_ratio = 0.0
     for detection in detections:
         x1, y1, x2, y2 = detection.bbox_xyxy
+        if detection.label == "fire_extinguisher":
+            # A registered extinguisher is the protected asset, never the obstruction.
+            continue
         if detection.label == "person" and detection.confidence >= 0.35:
             ratio = polygon.intersection(box(x1, y1, x2, y2)).area / polygon.area
             person_ratio = max(person_ratio, min(1.0, max(0.0, ratio)))

@@ -45,9 +45,14 @@ For a single image, use `--source-kind image`. For a live camera, use `--source-
 the numeric camera index. The window scales large videos for display but saves coordinates in
 the original frame's coordinate system.
 
+The same annotator can append a registered fire extinguisher and its separate floor approach
+polygon. Existing exit-only files remain valid. See
+[docs/MULTI_HAZARD.md](docs/MULTI_HAZARD.md) and [docs/ANNOTATION.md](docs/ANNOTATION.md) for the
+configuration contract, exact command, synthetic demo, and recording guide.
+
 ## Combined live demonstration
 
-First calibrate `configs/zones.json` using the actual fixed iPhone view. Its supplied polygon is SYNTHETIC and is not your exit. See `docs/CALIBRATION.md`. Moving, cropping or mirroring the camera requires new calibration/view ID.
+`configs/zones.json` is a saved calibration for the bundled chair footage (464×832, `exit-view-v2`). Calibrate a new zone for any other fixed camera view before interpreting results. The original synthetic test zone lives in `tests/fixtures/zones.json`. See `docs/CALIBRATION.md`. Moving, cropping or mirroring the camera requires a new calibration and view ID.
 
 ```bash
 python -m foresmoke.demo --source 1 --source-kind live --zones configs/zones.json --run-dir runs/live-01 --preview
@@ -73,6 +78,14 @@ Add `--record-panel-videos` if you also want separate `detections.mp4` and `fina
 The three-panel video uses 640-pixel-wide panels by default, producing a compact 1920-pixel-wide comparison. Use `--panel-width 800` for larger panels if the Mac keeps up.
 
 Video input also works: use `--source demo.mp4 --source-kind video --source-fps 30` with the video's actual constant FPS. Do not use a camera calibration for differently framed footage.
+
+## Optional Kiro visual review
+
+Add `--visual-review` to supplement the deterministic incident engine with bounded asynchronous
+image review by the official `kiro-cli`. The feature is disabled by default and never changes
+engine state. It saves immutable evidence under the run directory and appends validated status
+history to `reviews.jsonl`. Kiro CLI setup, model and credit notes, security restrictions, all
+review flags, and the frontend contract are documented in [docs/VISUAL_REVIEW.md](docs/VISUAL_REVIEW.md).
 
 ## Replay saved observations
 

@@ -1,0 +1,32 @@
+{
+  "run_id": "exit-test-01",
+  "source": "sample",
+  "state": "done",
+  "error": null,
+  "returncode": 0,
+  "created_at": "2026-10-24T20:18:30+00:00",
+  "finished_at": "2026-10-24T20:18:30+00:00",
+  "video_id": null,
+  "video_name": "Synthetic fixture (no video)",
+  "duration_s": 10.0,
+  "fps": null,
+  "width": 1280,
+  "height": 720,
+  "zone_config_id": null,
+  "zone_name": "Synthetic east_exit",
+  "target_hz": 5.0,
+  "expected_observations": 52,
+  "command": [
+    "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\.venv\\Scripts\\python.exe",
+    "-m",
+    "foresmoke.reasoning",
+    "--input",
+    "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\runs\\exit-test-01\\observations.jsonl",
+    "--zones",
+    "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\webapp_data\\runs\\exit-test-01\\zones.json",
+    "--events",
+    "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\runs\\exit-test-01\\events.jsonl",
+    "--snapshots",
+    "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\runs\\exit-test-01\\states.jsonl"
+  ]
+}

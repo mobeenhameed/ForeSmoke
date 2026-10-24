@@ -57,9 +57,59 @@
     }
   },
   "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.1"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "zone_name",
+          "zone_type",
+          "hazard_type",
+          "protected_asset_id",
+          "protected_asset_name",
+          "remediation",
+          "monitoring_objective"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.0"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "hazard_type": {
+            "const": "blocked_exit"
+          },
+          "zone_type": {
+            "const": "exit_access"
+          },
+          "protected_asset_id": {
+            "type": "null"
+          },
+          "protected_asset_name": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
   "properties": {
     "schema_version": {
-      "const": "1.0",
+      "enum": [
+        "1.0",
+        "1.1"
+      ],
       "title": "Schema Version",
       "type": "string"
     },
@@ -89,6 +139,91 @@
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
       "title": "Zone Id",
       "type": "string"
+    },
+    "zone_name": {
+      "anyOf": [
+        {
+          "maxLength": 120,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Zone Name"
+    },
+    "zone_type": {
+      "default": "exit_access",
+      "enum": [
+        "exit_access",
+        "extinguisher_access"
+      ],
+      "title": "Zone Type",
+      "type": "string"
+    },
+    "hazard_type": {
+      "default": "blocked_exit",
+      "enum": [
+        "blocked_exit",
+        "blocked_extinguisher_access"
+      ],
+      "title": "Hazard Type",
+      "type": "string"
+    },
+    "protected_asset_id": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Protected Asset Id"
+    },
+    "protected_asset_name": {
+      "anyOf": [
+        {
+          "maxLength": 120,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Protected Asset Name"
+    },
+    "remediation": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Remediation"
+    },
+    "monitoring_objective": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Monitoring Objective"
     },
     "phase": {
       "enum": [
@@ -183,4 +318,3 @@
   "title": "ZoneState",
   "type": "object"
 }
-

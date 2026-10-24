@@ -1,0 +1,20 @@
+{
+  "config_id": "zone-20261024-173501-1affbf",
+  "name": "AI exit access - chair_front.mp4",
+  "source": "user",
+  "video_id": "sample-chair_front",
+  "frame_t_ms": 0,
+  "camera_name": "CAM 6",
+  "view_name": "live-exit",
+  "created_at": "2026-10-24T21:35:01+00:00",
+  "path": "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\webapp_data\\zones\\zone-20261024-173501-1affbf.json",
+  "proposal_provenance": {
+    "job_id": "proposal-20261024-173445-6da14c",
+    "candidate_key": "candidate_1",
+    "requested_model": "claude-sonnet-5.5",
+    "source_timestamp_ms": 0,
+    "source_frame_index": 0,
+    "submitted_image_sha256": "b0d59cb8675fa4f2192b35ee46a095f7616059851db43240082b5520e0c3af0d",
+    "user_edited": false
+  }
+}

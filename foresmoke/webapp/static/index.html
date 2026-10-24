@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ForeSmoke · Footage review</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' rx='3' fill='%23166f58'/%3E%3Cpath d='M5 8l2 2 4-4' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css?v=12">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">▣</span>
+      <span class="brand-name">ForeSmoke</span>
+      <span class="brand-sub">Footage review</span>
+    </div>
+    <div class="source-clock" hidden title="Position in the source video. All incident times use this clock.">
+      <span class="clock-caption">Source video time</span>
+      <strong id="sourceClock" class="mono">--:--.---</strong>
+    </div>
+    <div id="loadedRun" class="loaded-run" aria-live="polite" hidden>No run loaded</div>
+    <nav class="main-nav" aria-label="Main navigation">
+      <button type="button" class="nav-link selected" data-app-nav="overview" aria-current="page">Overview</button>
+      <button type="button" class="nav-link" data-app-nav="live">Live</button>
+      <button type="button" class="nav-link" data-app-nav="videos">Videos</button>
+      <button id="libraryBtn" type="button" class="nav-link" data-app-nav="reviews">Reviews <span id="libraryCount" class="nav-count">0</span></button>
+      <button type="button" class="nav-link" data-app-nav="workspace">Workspace</button>
+    </nav>
+    <button id="globalRunStatus" type="button" class="global-run-status" hidden aria-label="Show analysis progress"><span class="activity-dot" aria-hidden="true"></span><span id="globalRunText">Analyzing footage</span></button>
+    <button id="newAnalysisBtn" type="button" class="btn btn-primary">New review</button>
+  </header>
+
+  <main id="overviewPage" class="app-page overview-page">
+    <div class="page-heading">
+      <div><p class="eyebrow">BUILDING OVERVIEW</p><h1>Exit access, at a glance</h1><p>Findings from the latest completed review of each recording.</p></div>
+      <button id="overviewNewBtn" type="button" class="btn btn-primary">Analyze footage</button>
+    </div>
+    <div class="metric-grid" aria-label="Review totals">
+      <div class="metric-card attention"><span>Open findings</span><strong id="metricOpen">—</strong><small>Not observed clear in the recording</small></div>
+      <div class="metric-card"><span>Confirmed findings</span><strong id="metricConfirmed">—</strong><small>Across latest video reviews</small></div>
+      <div class="metric-card"><span>Reviewed videos</span><strong id="metricReviewed">—</strong><small>With completed analysis</small></div>
+      <div class="metric-card"><span>Available videos</span><strong id="metricVideos">—</strong><small>Repository and uploads</small></div>
+    </div>
+    <div class="overview-grid">
+      <section class="overview-section"><div class="section-heading"><h2>Needs attention</h2><span id="attentionCount" class="subtle-count"></span></div><div id="attentionList" class="overview-list"></div></section>
+      <section class="overview-section"><div class="section-heading"><h2>Recent reviews</h2><button id="viewAllReviewsBtn" type="button" class="text-button">View all reviews</button></div><div id="recentReviews" class="overview-list"></div></section>
+    </div>
+    <section class="overview-section awaiting-section"><div class="section-heading"><h2>Awaiting review</h2><button id="viewAllVideosBtn" type="button" class="text-button">View all videos</button></div><div id="awaitingList" class="awaiting-list"></div></section>
+  </main>
+
+  <main id="livePage" class="app-page live-page" hidden>
+    <div class="page-heading">
+      <div><p class="eyebrow">LIVE MONITORING</p><h1>Camera wall</h1><p>Four synchronized views with the latest engine hazard state and overlays. Saved footage remains available in Videos.</p></div>
+      <div class="live-indicator"><span aria-hidden="true"></span> LIVE</div>
+    </div>
+    <div id="liveGrid" class="live-grid" aria-label="Live camera feeds"></div>
+  </main>
+
+  <main id="videosPage" class="app-page catalog-page" hidden>
+    <div class="page-heading">
+      <div><p class="eyebrow">VIDEO LIBRARY</p><h1>Recordings</h1><p>Footage from the GitHub repository and videos uploaded here.</p></div>
+      <div class="page-actions"><button id="syncGithubBtn" type="button" class="btn">Sync GitHub videos</button><button id="videoUploadBtn" type="button" class="btn btn-primary">Upload video</button></div>
+    </div>
+    <p id="githubSyncStatus" class="sync-status" role="status" aria-live="polite">Checking GitHub for videos…</p>
+    <div id="videoCatalog" class="video-grid"></div>
+  </main>
+
+  <main id="libraryPanel" class="app-page reviews-page" hidden>
+    <div class="page-heading"><div><p class="eyebrow">REVIEW HISTORY</p><h1>Saved reviews</h1><p>Search completed analyses and open the footage behind each finding.</p></div><button id="libraryCloseBtn" type="button" class="btn">Back</button></div>
+    <div class="reviews-layout">
+      <div class="library-tools">
+        <label class="field"><span>Find a review</span><input id="runSearch" type="search" placeholder="Search recordings or zones" autocomplete="off"></label>
+        <div class="library-filters" role="group" aria-label="Filter reviews">
+          <button type="button" class="filter-btn selected" data-run-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="filter-btn" data-run-filter="findings" aria-pressed="false">With findings</button>
+          <button type="button" class="filter-btn" data-run-filter="clear" aria-pressed="false">No findings</button>
+        </div>
+      </div>
+      <ul id="runList" class="run-list"></ul>
+    </div>
+  </main>
+
+  <main id="workspacePage" class="workspace" hidden>
+    <!-- LEFT: inputs -->
+    <aside id="setupPanel" class="sidebar" aria-label="New review setup" hidden>
+      <div class="setup-head"><h2>New review</h2><button id="setupCloseBtn" type="button" class="btn btn-icon" aria-label="Close setup">✕</button></div>
+      <section class="block">
+        <h2><span class="step">1</span> Video</h2>
+        <label class="field">
+          <span>Choose a video</span>
+          <select id="videoSelect"><option value="">Loading…</option></select>
+        </label>
+        <label class="btn btn-ghost btn-block upload">
+          <input id="uploadInput" type="file" accept="video/*,.mp4,.mov,.m4v,.avi,.mkv,.webm" hidden>
+          Upload a recorded video…
+        </label>
+        <div id="uploadProgress" class="progress thin" hidden><span></span></div>
+        <dl id="videoInfo" class="facts compact" hidden></dl>
+      </section>
+
+      <details class="block setup-advanced">
+        <summary>Camera details</summary>
+        <label class="field"><span>Camera name</span><input id="cameraName" value="cam01" autocomplete="off"></label>
+        <label class="field"><span>View name</span><input id="viewName" value="exit-view" autocomplete="off"></label>
+        <p class="hint">A new view ID is generated each time you save a zone. Redraw the zone if the camera moves.</p>
+      </details>
+
+      <section class="block">
+        <h2><span class="step">2</span> Access zone</h2>
+        <div id="zoneList" class="zone-list" role="radiogroup" aria-label="Saved zones for this video"></div>
+        <div class="suggest-box">
+          <label class="field"><span>Suggestion target</span>
+            <select id="proposalTarget">
+              <option value="auto">Exits or extinguishers</option>
+              <option value="exit_access">Exit access</option>
+              <option value="extinguisher_access">Extinguisher access</option>
+            </select>
+          </label>
+          <button id="suggestBtn" type="button" class="btn btn-primary btn-block">Suggest access areas</button>
+          <p class="hint">Kiro inspects this exact paused frame and loads the best valid suggestion for you. Review it, then save; suggestions never start monitoring.</p>
+          <div id="proposalPanel" class="proposal-panel" hidden>
+            <p id="proposalStatus" class="hint strong" role="status" aria-live="polite"></p>
+            <div id="proposalCandidates" class="proposal-candidates"></div>
+            <div class="btn-row">
+              <button id="editProposalBtn" type="button" class="btn btn-small" hidden>Edit selected draft</button>
+              <button id="cancelProposalBtn" type="button" class="btn btn-small btn-ghost" hidden>Cancel request</button>
+            </div>
+          </div>
+        </div>
+        <button id="drawBtn" type="button" class="btn btn-block">Draw a new zone on this frame</button>
+
+        <div id="drawPanel" class="draw-panel" hidden>
+          <p class="hint strong">Pause on a clear frame, then click the floor corners that must stay clear.
+            Drag a corner to move it; right-click (or select + Delete) to remove it.</p>
+          <div class="btn-row">
+            <button id="undoBtn" type="button" class="btn btn-small btn-ghost" title="Undo (Ctrl/Cmd+Z)">Undo</button>
+            <button id="deletePointBtn" type="button" class="btn btn-small btn-ghost">Delete point</button>
+            <button id="resetBtn" type="button" class="btn btn-small btn-ghost">Clear</button>
+          </div>
+          <label class="field"><span>Zone name</span><input id="zoneName" value="east_exit" autocomplete="off"></label>
+          <label class="field"><span>Zone purpose</span>
+            <select id="zoneType">
+              <option value="exit_access">Exit access</option>
+              <option value="extinguisher_access">Fire-extinguisher access</option>
+            </select>
+          </label>
+          <label id="assetNameField" class="field" hidden><span>Protected extinguisher name</span>
+            <input id="assetName" value="Fire extinguisher" autocomplete="off">
+          </label>
+          <details class="params">
+            <summary>Detection parameters</summary>
+            <fieldset class="labels">
+              <legend>Objects to watch</legend>
+              <div id="labelChoices" class="label-grid"></div>
+              <p class="hint">“person” is reserved: people are treated as occluding the view, not as obstructions.</p>
+            </fieldset>
+            <div class="grid-2">
+              <label class="field"><span>Confirm after (s)</span>
+                <input id="confirmS" type="number" min="0.2" max="600" step="0.1" value="5.0"></label>
+              <label class="field"><span>Resolve after clear (s)</span>
+                <input id="resolveS" type="number" min="0.2" max="600" step="0.1" value="3.0"></label>
+            </div>
+            <label class="field"><span>Minimum confidence</span>
+              <input id="minConf" type="number" min="0" max="1" step="0.05" value="0.35"></label>
+          </details>
+          <ul id="drawErrors" class="messages" aria-live="polite"></ul>
+          <div class="btn-row">
+            <button id="saveZoneBtn" type="button" class="btn btn-primary">Save zone</button>
+            <button id="cancelDrawBtn" type="button" class="btn btn-ghost">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2><span class="step">3</span> Analysis</h2>
+        <button id="runBtn" type="button" class="btn btn-primary btn-block">Run analysis</button>
+        <p class="hint">Processing is not instant: detection runs on this computer's CPU at 5 analysed frames per
+          second of video. Short clips (under ~30 s) analyse fastest.</p>
+        <div id="runProgress" class="run-progress" hidden>
+          <div class="progress"><span></span></div>
+          <div class="run-progress-line">
+            <span id="runProgressText">Starting…</span>
+            <span class="processing-time" title="Wall-clock processing time, not video time">⏱ <span id="runElapsed">0 s</span> processing</span>
+          </div>
+          <button id="cancelRunBtn" type="button" class="btn btn-small btn-danger">Cancel analysis</button>
+        </div>
+        <div id="runMessage" class="run-message" role="status" aria-live="polite" hidden></div>
+      </section>
+
+    </aside>
+
+    <!-- CENTER: video + timeline -->
+    <section class="center" aria-label="Video and timeline">
+      <div class="review-intro">
+        <div>
+          <p id="reviewEyebrow" class="eyebrow">FOOTAGE REVIEW</p>
+          <h1 id="reviewTitle">Review an exit route</h1>
+          <p id="reviewSummary" class="review-summary">Choose a recording, mark the access area, and analyze the footage.</p>
+        </div>
+        <div id="reviewActions" class="review-actions">
+          <button id="jumpConfirmBtn" type="button" class="btn" hidden>View obstruction</button>
+          <button id="jumpResolveBtn" type="button" class="btn btn-ghost" hidden>View clearance</button>
+        </div>
+      </div>
+      <div id="stage" class="stage">
+        <video id="video" playsinline muted preload="auto"></video>
+        <img id="proposalFrame" class="proposal-frame" alt="Exact frame used for AI access-area suggestions" hidden>
+        <canvas id="overlay" aria-label="Zone and detection overlay"></canvas>
+        <div id="stageEmpty" class="stage-empty">Loading recordings…</div>
+      </div>
+      <div class="transport">
+        <button id="playBtn" type="button" class="btn btn-icon" aria-label="Play">▶</button>
+        <button id="backBtn" type="button" class="btn btn-icon" aria-label="Previous frame" title="Previous frame (←)">◀︎|</button>
+        <button id="fwdBtn" type="button" class="btn btn-icon" aria-label="Next frame" title="Next frame (→)">|▶︎</button>
+        <input id="scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Scrub source video">
+        <span class="mono time"><span id="timeNow">00:00.000</span> / <span id="timeTotal">00:00.000</span></span>
+        <details class="debug-controls"><summary>Display</summary><label class="toggle"><input id="debugToggle" type="checkbox"> All detections</label></details>
+      </div>
+      <div class="timeline-block">
+        <div class="timeline-head">
+          <h2>Timeline</h2>
+          <details class="legend-details"><summary>Timeline key</summary><div class="legend" aria-label="Status legend">
+            <span class="chip chip-clear"><span class="chip-icon" aria-hidden="true">✓</span>Access clear</span>
+            <span class="chip chip-possible"><span class="chip-icon" aria-hidden="true">◔</span>Checking obstruction</span>
+            <span class="chip chip-confirmed"><span class="chip-icon" aria-hidden="true">!</span>Obstruction confirmed</span>
+            <span class="chip chip-resolved"><span class="chip-icon" aria-hidden="true">↺</span>Incident resolved</span>
+            <span class="chip chip-unknown"><span class="chip-icon" aria-hidden="true">?</span>View unavailable or obscured</span>
+          </div></details>
+        </div>
+        <div id="timeline" class="timeline"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: status + incidents -->
+    <aside class="panel" aria-label="Review findings">
+      <section class="block">
+        <h2>At this moment</h2>
+        <div id="zoneStatus"></div>
+      </section>
+      <div id="activeIncident" hidden></div>
+      <section class="block grow">
+        <h2>Findings</h2>
+        <div id="incidentHistory" class="incident-history"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="alert" hidden></div>
+  <script type="module" src="/static/app.js?v=17"></script>
+</body>
+</html>

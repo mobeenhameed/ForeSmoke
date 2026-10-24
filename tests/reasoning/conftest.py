@@ -6,5 +6,5 @@ ROOT = Path(__file__).resolve().parents[2]
 
 @pytest.fixture
 def config():
-    return load_config(ROOT / "configs/zones.json")
+    return load_config(ROOT / "tests/fixtures/zones.json")
 

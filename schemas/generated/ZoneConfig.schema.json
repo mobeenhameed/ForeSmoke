@@ -1,6 +1,97 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
+    "ProtectedAsset": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "asset_type": {
+          "const": "fire_extinguisher",
+          "title": "Asset Type",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "camera_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "Camera Id",
+          "type": "string"
+        },
+        "view_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+          "title": "View Id",
+          "type": "string"
+        },
+        "bbox_xyxy": {
+          "anyOf": [
+            {
+              "items": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "maxItems": 4,
+              "minItems": 4,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox Xyxy"
+        },
+        "point": {
+          "anyOf": [
+            {
+              "items": {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Point"
+        },
+        "reference_image_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Image Id"
+        }
+      },
+      "required": [
+        "asset_id",
+        "asset_type",
+        "name",
+        "camera_id",
+        "view_id"
+      ],
+      "title": "ProtectedAsset",
+      "type": "object"
+    },
     "ReferenceFrame": {
       "additionalProperties": false,
       "properties": {
@@ -30,10 +121,50 @@
           "title": "Zone Id",
           "type": "string"
         },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "zone_type": {
+          "default": "exit_access",
+          "enum": [
+            "exit_access",
+            "extinguisher_access"
+          ],
+          "title": "Zone Type",
+          "type": "string"
+        },
         "hazard_type": {
-          "const": "blocked_exit",
+          "default": "blocked_exit",
+          "enum": [
+            "blocked_exit",
+            "blocked_extinguisher_access"
+          ],
           "title": "Hazard Type",
           "type": "string"
+        },
+        "protected_asset_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protected Asset Id"
         },
         "polygon": {
           "items": {
@@ -107,7 +238,6 @@
       },
       "required": [
         "zone_id",
-        "hazard_type",
         "polygon",
         "candidate_labels",
         "min_confidence",
@@ -153,6 +283,13 @@
       "title": "Live Stale After Ms",
       "type": "integer"
     },
+    "assets": {
+      "items": {
+        "$ref": "#/$defs/ProtectedAsset"
+      },
+      "title": "Assets",
+      "type": "array"
+    },
     "zones": {
       "items": {
         "$ref": "#/$defs/Zone"
@@ -174,4 +311,3 @@
   "title": "ZoneConfig",
   "type": "object"
 }
-

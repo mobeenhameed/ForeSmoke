@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "camera_id": "CAM-3",
+  "view_id": "live-exit-8992b9",
+  "reference_frame": {
+    "width": 464,
+    "height": 832
+  },
+  "max_observation_gap_ms": 1000,
+  "live_stale_after_ms": 2000,
+  "assets": [],
+  "zones": [
+    {
+      "zone_id": "AI-exit-access-chair.mp4",
+      "name": "Ai Exit Access Chair.Mp4",
+      "zone_type": "exit_access",
+      "hazard_type": "blocked_exit",
+      "protected_asset_id": null,
+      "polygon": [
+        [
+          0.288793,
+          0.824519
+        ],
+        [
+          0.771552,
+          0.824519
+        ],
+        [
+          0.866379,
+          0.961538
+        ],
+        [
+          0.198276,
+          0.961538
+        ]
+      ],
+      "candidate_labels": [
+        "chair",
+        "backpack",
+        "suitcase"
+      ],
+      "min_confidence": 0.35,
+      "footprint_height_fraction": 0.2,
+      "enter_overlap": 0.3,
+      "exit_overlap": 0.15,
+      "person_occlusion_ratio": 0.2,
+      "confirm_ms": 5000,
+      "candidate_clear_ms": 1000,
+      "resolve_ms": 3000
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "camera_id": "Cam1",
+  "view_id": "extinguisher-wall-db617f",
+  "reference_frame": {
+    "width": 640,
+    "height": 480
+  },
+  "max_observation_gap_ms": 1000,
+  "live_stale_after_ms": 2000,
+  "assets": [
+    {
+      "asset_id": "Cam1-extinguisher-access-extinguisher",
+      "asset_type": "fire_extinguisher",
+      "name": "Red fire extinguisher left of hydrant cabinet",
+      "camera_id": "Cam1",
+      "view_id": "extinguisher-wall-db617f",
+      "bbox_xyxy": [
+        0.085938,
+        0.48125,
+        0.114062,
+        0.589583
+      ],
+      "point": null,
+      "reference_image_id": "3e76d77df1029f326d75018e68f3dab5844ec06878350cd2"
+    }
+  ],
+  "zones": [
+    {
+      "zone_id": "Cam1-extinguisher-access",
+      "name": "Cam1 Extinguisher Access",
+      "zone_type": "extinguisher_access",
+      "hazard_type": "blocked_extinguisher_access",
+      "protected_asset_id": "Cam1-extinguisher-access-extinguisher",
+      "polygon": [
+        [
+          0.059375,
+          0.7
+        ],
+        [
+          0.171875,
+          0.639583
+        ],
+        [
+          0.234375,
+          0.697917
+        ],
+        [
+          0.195312,
+          0.775
+        ],
+        [
+          0.0625,
+          0.754167
+        ]
+      ],
+      "candidate_labels": [
+        "backpack",
+        "suitcase",
+        "handbag"
+      ],
+      "min_confidence": 0.2,
+      "footprint_height_fraction": 0.2,
+      "enter_overlap": 0.3,
+      "exit_overlap": 0.15,
+      "person_occlusion_ratio": 0.2,
+      "confirm_ms": 3000,
+      "candidate_clear_ms": 1000,
+      "resolve_ms": 3000
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "config_id": "zone-20261024-174734-ccf691",
+  "name": "AI access - Cam1",
+  "source": "user",
+  "video_id": "sample-Cam1",
+  "frame_t_ms": 5005,
+  "camera_name": "Cam1",
+  "view_name": "live-camera",
+  "created_at": "2026-10-24T21:47:34+00:00",
+  "path": "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\webapp_data\\zones\\zone-20261024-174734-ccf691.json",
+  "proposal_provenance": {
+    "job_id": "proposal-20261024-174715-eee740",
+    "candidate_key": "candidate_1",
+    "requested_model": "claude-sonnet-5.5",
+    "source_timestamp_ms": 5005,
+    "source_frame_index": 150,
+    "submitted_image_sha256": "3e76d77df1029f326d75018e68f3dab5844ec06878350cd21a69a74489faa222",
+    "user_edited": false
+  }
+}

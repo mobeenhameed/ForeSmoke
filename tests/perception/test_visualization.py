@@ -37,7 +37,7 @@ def test_clean_recording_uses_source_timeline(tmp_path):
 
 
 def test_three_panel_video_is_synchronized_and_horizontal(tmp_path):
-    config = load_config("configs/zones.json")
+    config = load_config("tests/fixtures/zones.json")
     detection = Detection(label="chair", confidence=0.9,
                           bbox_xyxy=[0.38, 0.28, 0.56, 0.84], track_id="7")
     packet = SimpleNamespace(detections=[detection], t_ms=5000)

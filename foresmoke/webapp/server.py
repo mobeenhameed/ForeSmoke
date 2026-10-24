@@ -162,13 +162,19 @@ def create_app(
     def video_frame(video_id: str, t_ms: int = Query(..., ge=0), width: int = Query(360, ge=64, le=1280)):
         meta = get_video(video_id)
         cache = settings.thumbs_dir / meta["video_id"] / f"{t_ms}-{width}.jpg"
-        if not cache.exists():
-            try:
-                data = read_frame_jpeg(meta["path"], t_ms, width)
-            except ProbeError as error:
-                raise HTTPException(422, str(error)) from error
-            cache.parent.mkdir(parents=True, exist_ok=True)
-            cache.write_bytes(data)
+        if cache.exists():
+            return FileResponse(cache, media_type="image/jpeg")
+        bundled = settings.repo_root / "webapp_data" / "thumbs" / meta["video_id"] / f"{t_ms}-{width}.jpg"
+        if bundled.exists():
+            return FileResponse(bundled, media_type="image/jpeg")
+        if "path" not in meta:
+            raise HTTPException(404, "This precomputed deployment does not include that preview frame")
+        try:
+            data = read_frame_jpeg(meta["path"], t_ms, width)
+        except ProbeError as error:
+            raise HTTPException(422, str(error)) from error
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_bytes(data)
         return FileResponse(cache, media_type="image/jpeg")
 
     # -- zones -----------------------------------------------------------------------------

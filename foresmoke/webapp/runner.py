@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from pathlib import Path
 import shutil
 import signal
@@ -22,15 +23,82 @@ ACTIVE = "running"
 TERMINAL = ("done", "failed", "cancelled")
 
 
+def _posix_descendants(root_pid: int) -> list[int]:
+    try:
+        listing = subprocess.run(
+            ["ps", "-eo", "pid=,ppid="],
+            capture_output=True, text=True, check=False, timeout=3,
+        ).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    children: dict[int, list[int]] = {}
+    for line in listing.splitlines():
+        try:
+            pid_text, parent_text = line.split()
+            children.setdefault(int(parent_text), []).append(int(pid_text))
+        except (ValueError, TypeError):
+            continue
+    descendants: list[int] = []
+    stack = [root_pid]
+    while stack:
+        direct = children.get(stack.pop(), [])
+        descendants.extend(direct)
+        stack.extend(direct)
+    return descendants
+
+
+def _kill_process_tree(proc: subprocess.Popen) -> None:
+    """Best-effort bounded escalation that includes separately grouped descendants."""
+    if proc.poll() is not None:
+        return
+    if os.name == "nt":
+        try:
+            subprocess.run(
+                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                check=False, timeout=5,
+            )
+        except subprocess.TimeoutExpired:
+            proc.kill()
+    else:
+        for pid in reversed(_posix_descendants(proc.pid)):
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                pass
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except OSError:
+            proc.kill()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
 def build_command(*, python: str, source: Path, source_fps: float, zones: Path, run_dir: Path,
-                  target_hz: float) -> list[str]:
+                  target_hz: float, settings: Settings | None = None) -> list[str]:
     """The exact CLI contract from the integration brief, as an argv list (no shell)."""
-    return [python, "-m", "foresmoke.demo",
-            "--source", str(source), "--source-kind", "video",
+    command = [python, "-m", "foresmoke.demo",
+            "--source", source.as_posix(), "--source-kind", "video",
             "--source-fps", f"{source_fps:g}",
-            "--zones", str(zones),
-            "--run-dir", str(run_dir),
+            "--zones", zones.as_posix(),
+            "--run-dir", run_dir.as_posix(),
             "--target-hz", f"{target_hz:g}"]
+    if settings is not None and settings.visual_review_enabled:
+        command += [
+            "--visual-review",
+            "--kiro-cli", settings.kiro_cli,
+            "--review-model", settings.review_model,
+            "--review-timeout-s", f"{settings.review_timeout_s:g}",
+            "--review-candidate-delay-ms", str(settings.review_candidate_delay_ms),
+            "--review-cooldown-ms", str(settings.review_cooldown_ms),
+            "--review-queue-capacity", str(settings.review_queue_capacity),
+            "--review-max-per-run", str(settings.review_max_per_run),
+        ]
+        if settings.review_clear_reference is not None:
+            command += ["--review-clear-reference", settings.review_clear_reference.as_posix()]
+    return command
 
 
 class RunManager:
@@ -66,7 +134,8 @@ class RunManager:
         shutil.copyfile(zone["path"], zones_copy)
         target_hz = self.settings.target_hz
         command = build_command(python=self.python, source=Path(video["path"]), source_fps=video["fps"],
-                                zones=zones_copy, run_dir=run_dir, target_hz=target_hz)
+                                zones=zones_copy, run_dir=run_dir, target_hz=target_hz,
+                                settings=self.settings)
         meta = {
             "run_id": run_id, "state": ACTIVE, "created_at": now_iso(), "started_epoch": None,
             "finished_at": None, "elapsed_s": None, "returncode": None, "error": None,
@@ -80,8 +149,13 @@ class RunManager:
         }
         log = (meta_dir / "process.log").open("wb")
         try:
+            creationflags = (
+                subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+            )
             proc = subprocess.Popen(command, cwd=self.settings.repo_root, stdout=log,
-                                    stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+                                    stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                    creationflags=creationflags,
+                                    start_new_session=os.name != "nt")
         except OSError as error:
             log.close()
             meta.update(state="failed", error=f"Could not start analysis: {error}", finished_at=now_iso())
@@ -127,17 +201,33 @@ class RunManager:
             meta["state"] = "cancelled"
             meta["error"] = "Cancelled by reviewer"
             self._save_meta(run_id, meta)
-        # SIGINT lets demo.py close its files cleanly; escalate if it does not exit.
-        for sig, wait in ((signal.SIGINT, 5), (signal.SIGTERM, 3)):
+        # Give demo.py a group interrupt so it can terminate its Kiro child, then escalate.
+        known_descendants = _posix_descendants(proc.pid) if os.name != "nt" else []
+        signals = (
+            ((signal.CTRL_BREAK_EVENT, 5),)
+            if os.name == "nt"
+            else ((signal.SIGINT, 5), (signal.SIGTERM, 3))
+        )
+        for sig, wait in signals:
             if proc.poll() is not None:
                 break
-            proc.send_signal(sig)
+            try:
+                proc.send_signal(sig)
+            except OSError:
+                break
             try:
                 proc.wait(timeout=wait)
             except subprocess.TimeoutExpired:
                 continue
         if proc.poll() is None:
-            proc.kill()
+            _kill_process_tree(proc)
+        elif os.name != "nt":
+            # A force-exited parent cannot clean up a separately grouped Kiro child.
+            for pid in reversed(known_descendants):
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
         return self.status(run_id)
 
     def status(self, run_id: str) -> dict:

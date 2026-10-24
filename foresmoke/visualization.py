@@ -34,7 +34,7 @@ def detection_panel(raw_frame, packet):
     return draw_preview(panel, packet.detections, packet.t_ms)
 
 
-def result_panel(raw_frame, zones, states, latest_event: str | None = None):
+def result_panel(raw_frame, zones, states, latest_event: str | None = None, assets=None):
     import cv2
     import numpy as np
 
@@ -42,6 +42,27 @@ def result_panel(raw_frame, zones, states, latest_event: str | None = None):
     shade = np.zeros_like(panel)
     cv2.addWeighted(panel, 0.58, shade, 0.42, 0, panel)
     height, width = panel.shape[:2]
+    for asset in assets or []:
+        color = (220, 80, 220)
+        if asset.bbox_xyxy is not None:
+            x1, y1, x2, y2 = asset.bbox_xyxy
+            p1 = (round(x1 * (width - 1)), round(y1 * (height - 1)))
+            p2 = (round(x2 * (width - 1)), round(y2 * (height - 1)))
+            cv2.rectangle(panel, p1, p2, color, max(2, round(width / 600)))
+            label_at = (p1[0], max(18, p1[1] - 5))
+        else:
+            assert asset.point is not None
+            x, y = asset.point
+            center = (round(x * (width - 1)), round(y * (height - 1)))
+            size = max(8, round(width / 100))
+            cv2.drawMarker(
+                panel, center, color, cv2.MARKER_CROSS, size * 2, 2, cv2.LINE_AA
+            )
+            label_at = (center[0] + size, max(18, center[1] - size))
+        cv2.putText(
+            panel, asset.name, label_at, cv2.FONT_HERSHEY_SIMPLEX,
+            max(0.45, width / 2200), color, 1, cv2.LINE_AA,
+        )
     for index, (zone, state) in enumerate(zip(zones, states)):
         color = (140, 140, 140) if state.observation_state == "unknown" else PHASE_COLORS[state.phase]
         points = np.array(
@@ -51,7 +72,7 @@ def result_panel(raw_frame, zones, states, latest_event: str | None = None):
         cv2.polylines(panel, [points], True, color, max(3, round(width / 500)))
         cv2.putText(
             panel,
-            f"{zone.zone_id}: {state.phase} / {state.observation_state.upper()}",
+            f"{zone.name or zone.zone_id}: {zone.hazard_type} | {state.phase} / {state.observation_state.upper()}",
             (20, 42 + index * 34),
             cv2.FONT_HERSHEY_SIMPLEX,
             max(0.65, width / 1900),

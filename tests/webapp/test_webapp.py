@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import stat
 import sys
@@ -103,7 +104,7 @@ def test_command_is_the_documented_cli():
 
 def fake_cli(tmp_path: Path, *, lines: int, code: int, delay: float = 0.02) -> str:
     """A stand-in interpreter that behaves like `python -m foresmoke.demo` without a model."""
-    script = tmp_path / "fake_python"
+    script = tmp_path / ("fake_python.py" if os.name == "nt" else "fake_python")
     script.write_text(f"""#!{sys.executable}
 import sys, time, pathlib
 args = sys.argv[1:]
@@ -115,6 +116,10 @@ with open(run / 'observations.jsonl', 'w') as f:
 sys.exit({code})
 """)
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
+    if os.name == "nt":
+        wrapper = tmp_path / "fake_python.cmd"
+        wrapper.write_text(f'@"{sys.executable}" "{script}" %*\n')
+        return str(wrapper)
     return str(script)
 
 
@@ -203,6 +208,9 @@ def test_api_flow_upload_zone_and_serve_jsonl_unaltered(settings, tmp_path):
         raw = b'{"zone_id":"z","phase":"CLEAR","t_ms":0}\n{"zone_id":"z","phase":"POSSIBLE","t_ms":200}\n'
         (run_dir / "states.jsonl").write_bytes(raw)
         assert client.get("/api/runs/external-1/states").content == raw
+        reviews = b'{"review_id":"r1","status":"completed","assessment":{"assessment":"uncertain"}}\n'
+        (run_dir / "reviews.jsonl").write_bytes(reviews)
+        assert client.get("/api/runs/external-1/reviews").content == reviews
         assert any(r["run_id"] == "external-1" for r in client.get("/api/runs").json())
         assert client.get("/api/runs/..%2Fetc/states").status_code in (400, 404)
 

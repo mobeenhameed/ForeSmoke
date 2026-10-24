@@ -228,6 +228,11 @@ def create_app(settings: Settings | None = None, *, seed_sample: bool = True) ->
     def run_events(run_id: str):
         return _jsonl(run_id, "events.jsonl")
 
+    @app.get("/api/runs/{run_id}/reviews")
+    def run_reviews(run_id: str):
+        """Append-only status history; fold by review_id to obtain the latest result."""
+        return _jsonl(run_id, "reviews.jsonl")
+
     @app.get("/api/runs/{run_id}/thumb")
     def run_thumb(run_id: str, t_ms: int = Query(..., ge=0), width: int = Query(360, ge=64, le=1280)):
         meta = get_run(run_id)

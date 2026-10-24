@@ -7,6 +7,7 @@ from typing import Any
 from shapely.geometry import Polygon
 from foresmoke.shared.contracts import (
     Candidate, Evidence, FrameObservation, HazardEvent, Phase, Zone, ZoneConfig, ZoneState,
+    monitoring_objective, remediation_text,
 )
 from .config import validate_config
 from .events import event_id, incident_id
@@ -45,6 +46,7 @@ class ReasoningEngine:
         self._watchdog_enabled = live_watchdog
         self._zones = {z.zone_id: _State() for z in self.config.zones}
         self._polygons = {z.zone_id: Polygon(z.polygon) for z in self.config.zones}
+        self._assets = {asset.asset_id: asset for asset in self.config.assets}
         self._run_id: str | None = None
         self._kind: str | None = None
         self._last_seq = -1
@@ -167,12 +169,18 @@ class ReasoningEngine:
         assert packet.frame is not None and state.incident is not None
         assert state.first_seen is not None and state.confirmed_at is not None
         assert state.last_positive_seq is not None and state.confirmation_ms >= zone.confirm_ms
+        assert zone.name is not None
+        asset = self._assets.get(zone.protected_asset_id or "")
         resolved = kind == "incident_resolved"
         assert not resolved or state.negative_ms >= zone.resolve_ms
         return HazardEvent(
-            schema_version="1.0", event_type=kind, event_id=event_id(state.incident, kind),
+            schema_version="1.1", event_type=kind, event_id=event_id(state.incident, kind),
             incident_id=state.incident, run_id=packet.run_id, camera_id=packet.camera_id,
             view_id=packet.view_id, zone_id=zone.zone_id, hazard_type=zone.hazard_type,
+            zone_name=zone.name, zone_type=zone.zone_type,
+            protected_asset_id=asset.asset_id if asset else None,
+            protected_asset_name=asset.name if asset else None,
+            remediation=remediation_text(zone.zone_type, asset.name if asset else None),
             phase=state.phase, t_ms=packet.t_ms, first_seen_ms=state.first_seen,
             confirmed_at_ms=state.confirmed_at, resolved_at_ms=packet.t_ms if resolved else None,
             confirmation_evidence_ms=state.confirmation_ms,
@@ -203,12 +211,23 @@ class ReasoningEngine:
         self._ended = True
 
     def snapshots(self) -> list[ZoneState]:
-        return [
-            ZoneState(schema_version="1.0", run_id=self._run_id,
-                      camera_id=self.config.camera_id, view_id=self.config.view_id, zone_id=zone_id,
+        snapshots = []
+        for zone in self.config.zones:
+            s = self._zones[zone.zone_id]
+            assert zone.name is not None
+            asset = self._assets.get(zone.protected_asset_id or "")
+            snapshots.append(
+                ZoneState(schema_version="1.1", run_id=self._run_id,
+                      camera_id=self.config.camera_id, view_id=self.config.view_id, zone_id=zone.zone_id,
+                      zone_name=zone.name, zone_type=zone.zone_type, hazard_type=zone.hazard_type,
+                      protected_asset_id=asset.asset_id if asset else None,
+                      protected_asset_name=asset.name if asset else None,
+                      remediation=remediation_text(zone.zone_type, asset.name if asset else None),
+                      monitoring_objective=monitoring_objective(
+                          zone.zone_type, asset.name if asset else None),
                       phase=s.phase, observation_state=s.observation_state, observation_reason=s.reason,
                       incident_id=s.incident, t_ms=self._last_t, positive_evidence_ms=s.positive_ms,
                       negative_run_ms=s.negative_ms, candidates=[c.model_copy(deep=True) for c in s.candidates])
-            for zone_id, s in self._zones.items()
-        ]
+            )
+        return snapshots
 

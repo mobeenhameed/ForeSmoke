@@ -43,7 +43,10 @@ def build_zone_config(*, camera_id: str, view_id: str, width: int, height: int, 
     params = {**PARAM_DEFAULTS, **(params or {})}
     zone = {
         "zone_id": zone_id,
+        "name": zone_id.replace("-", " ").replace("_", " ").title(),
+        "zone_type": "exit_access",
         "hazard_type": ZONE_DEFAULTS["hazard_type"],
+        "protected_asset_id": None,
         "polygon": [[round(float(x), 6), round(float(y), 6)] for x, y in polygon],
         "candidate_labels": list(params["candidate_labels"]),
         "min_confidence": float(params["min_confidence"]),
@@ -61,6 +64,7 @@ def build_zone_config(*, camera_id: str, view_id: str, width: int, height: int, 
         "view_id": view_id,
         "reference_frame": {"width": int(width), "height": int(height)},
         **CONFIG_DEFAULTS,
+        "assets": [],
         "zones": [zone],
     }
 

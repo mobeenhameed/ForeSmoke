@@ -12,8 +12,10 @@ def explain(event: HazardEvent) -> str:
     if event.event_type == "incident_confirmed":
         labels = ", ".join(sorted({c.label for c in event.evidence.objects}))
         overlap = max(c.zone_overlap for c in event.evidence.objects)
-        return (f"{event.zone_id}: access occupied by {labels}; footprint overlap "
-                f"{overlap:.2f}; {event.confirmation_evidence_ms / 1000:.1f} s positive evidence")
+        return (f"{event.zone_name}: {event.hazard_type}; access occupied by {labels}; "
+                f"footprint overlap {overlap:.2f}; "
+                f"{event.confirmation_evidence_ms / 1000:.1f} s positive evidence. "
+                f"{event.remediation}")
     return (f"{event.zone_id}: no configured obstruction observed for "
             f"{event.clear_evidence_ms / 1000:.1f} s; incident resolved")
 

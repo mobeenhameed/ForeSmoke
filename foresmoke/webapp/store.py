@@ -12,7 +12,7 @@ import tempfile
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
-RUN_FILES = ("observations.jsonl", "states.jsonl", "events.jsonl")
+RUN_FILES = ("observations.jsonl", "states.jsonl", "events.jsonl", "reviews.jsonl")
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm"}
 
 
@@ -26,6 +26,48 @@ class Settings:
     sample_videos_dir: Path = REPO_ROOT
     bundled_zones: Path = REPO_ROOT / "configs" / "zones.json"
     target_hz: float = 5.0
+    visual_review_enabled: bool = field(
+        default_factory=lambda: os.environ.get("FORESMOKE_VISUAL_REVIEW", "").lower()
+        in ("1", "true", "yes", "on")
+    )
+    kiro_cli: str = field(
+        default_factory=lambda: os.environ.get("FORESMOKE_KIRO_CLI", "kiro-cli")
+    )
+    review_model: str = field(
+        default_factory=lambda: os.environ.get(
+            "FORESMOKE_REVIEW_MODEL", "claude-sonnet-5.5"
+        )
+    )
+    review_timeout_s: float = field(
+        default_factory=lambda: float(os.environ.get("FORESMOKE_REVIEW_TIMEOUT_S", "60"))
+    )
+    review_candidate_delay_ms: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FORESMOKE_REVIEW_CANDIDATE_DELAY_MS", "2000")
+        )
+    )
+    review_cooldown_ms: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FORESMOKE_REVIEW_COOLDOWN_MS", "5000")
+        )
+    )
+    review_queue_capacity: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FORESMOKE_REVIEW_QUEUE_CAPACITY", "3")
+        )
+    )
+    review_max_per_run: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FORESMOKE_REVIEW_MAX_PER_RUN", "10")
+        )
+    )
+    review_clear_reference: Path | None = field(
+        default_factory=lambda: (
+            Path(value)
+            if (value := os.environ.get("FORESMOKE_REVIEW_CLEAR_REFERENCE"))
+            else None
+        )
+    )
 
     @property
     def videos_dir(self) -> Path:

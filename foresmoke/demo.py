@@ -1,6 +1,7 @@
 """One consumer owns reasoning and GUI; capture/inference run independently."""
 from __future__ import annotations
 import argparse
+from collections import deque
 from contextlib import ExitStack
 import logging
 from pathlib import Path
@@ -34,6 +35,21 @@ def main(argv=None):
     p.add_argument('--raw-fps', type=float, default=15.0,
                    help='frame rate for the clean camera recording')
     p.add_argument('--panel-width', type=int, default=640)
+    p.add_argument('--visual-review', action='store_true',
+                   help='enable bounded asynchronous visual review with the official Kiro CLI')
+    p.add_argument('--kiro-cli', default='kiro-cli')
+    p.add_argument('--review-model', default='claude-sonnet-5.5')
+    p.add_argument('--review-timeout-s', type=float, default=60.0)
+    p.add_argument('--review-candidate-delay-ms', type=int, default=2000)
+    p.add_argument('--review-cooldown-ms', type=int, default=5000)
+    p.add_argument('--review-queue-capacity', type=int, default=3)
+    p.add_argument('--review-max-per-run', type=int, default=10)
+    p.add_argument('--review-evidence-dir')
+    p.add_argument('--review-clear-reference')
+    p.add_argument('--review-clear-reference-t-ms', type=int)
+    p.add_argument('--review-max-frames', type=int, default=3)
+    p.add_argument('--review-max-image-dimension', type=int, default=1280)
+    p.add_argument('--review-max-image-bytes', type=int, default=1500000)
     a=p.parse_args(argv)
     if a.record_panel_videos: a.record_video=True
     logging.basicConfig(level=logging.INFO)
@@ -43,19 +59,39 @@ def main(argv=None):
     names=['observations.jsonl','events.jsonl','states.jsonl']
     video_names=['raw_footage.mp4','combined_three_panel.mp4']
     if a.record_panel_videos: video_names += ['detections.mp4','final_results.mp4']
-    protected = names + (video_names if a.record_video else [])
+    protected = names + (['reviews.jsonl'] if a.visual_review else []) + (video_names if a.record_video else [])
     if any((out/n).exists() for n in protected):
         p.error('Run directory already contains results; use a new --run-dir.')
     cfg=PerceptionConfig(source=a.source,source_kind=a.source_kind,camera_id=config.camera_id,
         view_id=config.view_id,run_dir=out,model=a.model,imgsz=a.imgsz,source_fps=a.source_fps,
         target_hz=a.target_hz)
+    review_service=None; review_settings=None
+    if a.visual_review:
+        from .review import ReviewSettings, VisualReviewService
+        review_settings=ReviewSettings(
+            enabled=True, cli_executable=a.kiro_cli, model=a.review_model,
+            timeout_s=a.review_timeout_s, candidate_delay_ms=a.review_candidate_delay_ms,
+            cooldown_ms=a.review_cooldown_ms, queue_capacity=a.review_queue_capacity,
+            max_reviews_per_run=a.review_max_per_run,
+            evidence_dir=Path(a.review_evidence_dir) if a.review_evidence_dir else None,
+            clear_reference=Path(a.review_clear_reference) if a.review_clear_reference else None,
+            clear_reference_t_ms=a.review_clear_reference_t_ms,
+            max_frames=a.review_max_frames, max_image_dimension=a.review_max_image_dimension,
+            max_image_bytes=a.review_max_image_bytes,
+        ).validate()
+        review_service=VisualReviewService(
+            run_dir=out, repo_root=Path(__file__).resolve().parents[1],
+            settings=review_settings, zones=config.zones, assets=config.assets,
+        )
     stop=threading.Event(); q=queue.Queue(maxsize=2); lock=threading.Lock()
     frames={}; done=object(); errors=[]
+    review_samples=deque(maxlen=review_settings.max_frames if review_settings else 1)
     raw_recorder=None
     def save_frame(seq, image):
         with lock:
             frames[seq]=image
-            while len(frames)>2: frames.pop(next(iter(frames)))
+            keep=max(2,(review_settings.max_frames + 2) if review_settings else 2)
+            while len(frames)>keep: frames.pop(next(iter(frames)))
     def offer(item):
         while not stop.is_set():
             try: q.put(item,timeout=.05); return
@@ -67,12 +103,14 @@ def main(argv=None):
         try:
             for packet in iter_observations(
                 cfg,
-                on_frame=save_frame if (a.preview or a.record_video) else None,
+                on_frame=save_frame if (a.preview or a.record_video or a.visual_review) else None,
                 on_raw_frame=raw_recorder if a.record_video else None,
                 stop_event=stop,
             ):
                 if stop.is_set(): break
-                offer(packet)
+                with lock:
+                    exact_frame=frames.get(packet.seq)
+                offer((packet,exact_frame))
         except Exception as exc:
             errors.append(exc)
         finally: offer(done)
@@ -90,6 +128,7 @@ def main(argv=None):
            if a.record_video else None)
     with ExitStack() as stack:
         obs,events,states=[stack.enter_context((out/n).open('x',encoding='utf-8')) for n in names]
+        input_complete=False
         def snapshots():
             current=engine.snapshots()
             for state in current: states.write(state.model_dump_json()+'\n')
@@ -100,13 +139,18 @@ def main(argv=None):
             while True:
                 try: item=q.get(timeout=.05 if a.preview else .25)
                 except queue.Empty: item=None
+                lifecycle_events=[]
                 if a.source_kind=='live': engine.tick(now_ms())
-                if item is done: break
+                if item is done:
+                    input_complete=True
+                    break
                 if item is not None:
+                    item,exact_frame=item
                     obs.write(item.model_dump_json()+'\n'); obs.flush()
                     failed |= item.status=='unavailable'
                     try:
-                        for event in engine.process(item,now_ms()):
+                        lifecycle_events=engine.process(item,now_ms())
+                        for event in lifecycle_events:
                             events.write(event.model_dump_json()+'\n')
                             logging.info('%s: %s',event.zone_id,event.event_type)
                             latest_event=f"{event.zone_id}: {event.event_type.replace('_', ' ').upper()} at {event.t_ms / 1000:.1f}s"
@@ -115,11 +159,18 @@ def main(argv=None):
                         failed=True; logging.error('Rejected observation: %s',exc)
                     last_packet=item
                     if a.preview or a.record_video:
-                        with lock: latest=frames.get(item.seq)
+                        latest=exact_frame
                 current=snapshots()
+                if item is not None and item.status=='ok' and review_service is not None:
+                    if exact_frame is not None:
+                        from .review import FrameSample
+                        review_samples.append(FrameSample(item,exact_frame.copy()))
+                    review_service.observe(
+                        samples=list(review_samples),states=current,events=lifecycle_events,
+                    )
                 if item is not None and latest is not None and last_packet is not None and last_packet.status=='ok':
                     detected=detection_panel(latest,last_packet)
-                    result=result_panel(latest,config.zones,current,latest_event)
+                    result=result_panel(latest,config.zones,current,latest_event,config.assets)
                     canvas=(video.write(latest,detected,result,last_packet.t_ms) if video else
                             comparison_panel(latest,detected,result,last_packet.t_ms,a.panel_width))
                     if a.preview:
@@ -139,6 +190,14 @@ def main(argv=None):
             pass
         finally:
             stop.set(); engine.close_input(); snapshots(); worker.join(timeout=1)
+            if review_service:
+                review_service.shutdown(
+                    wait_s=min(
+                        review_settings.timeout_s * (review_settings.queue_capacity + 1) + 2,
+                        300,
+                    ) if input_complete else 2,
+                    drain=input_complete,
+                )
             if raw_recorder: raw_recorder.close()
             if video: video.close()
             if a.preview: cv2.destroyAllWindows()

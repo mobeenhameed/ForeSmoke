@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0",
+  "camera_id": "cam01",
+  "view_id": "multi-hazard-synthetic-v1",
+  "reference_frame": {
+    "width": 1280,
+    "height": 720
+  },
+  "max_observation_gap_ms": 1000,
+  "live_stale_after_ms": 2000,
+  "assets": [
+    {
+      "asset_id": "extinguisher_lobby_01",
+      "asset_type": "fire_extinguisher",
+      "name": "Lobby fire extinguisher",
+      "camera_id": "cam01",
+      "view_id": "multi-hazard-synthetic-v1",
+      "bbox_xyxy": [0.82, 0.2, 0.88, 0.48],
+      "point": null,
+      "reference_image_id": "synthetic_reference"
+    }
+  ],
+  "zones": [
+    {
+      "zone_id": "east_exit",
+      "name": "East exit approach",
+      "zone_type": "exit_access",
+      "hazard_type": "blocked_exit",
+      "protected_asset_id": null,
+      "polygon": [[0.05, 0.55], [0.35, 0.55], [0.35, 0.95], [0.05, 0.95]],
+      "candidate_labels": ["chair", "backpack", "suitcase"],
+      "min_confidence": 0.35,
+      "footprint_height_fraction": 0.2,
+      "enter_overlap": 0.3,
+      "exit_overlap": 0.15,
+      "person_occlusion_ratio": 0.2,
+      "confirm_ms": 5000,
+      "candidate_clear_ms": 1000,
+      "resolve_ms": 3000
+    },
+    {
+      "zone_id": "lobby_extinguisher_access",
+      "name": "Lobby extinguisher access",
+      "zone_type": "extinguisher_access",
+      "hazard_type": "blocked_extinguisher_access",
+      "protected_asset_id": "extinguisher_lobby_01",
+      "polygon": [[0.55, 0.55], [0.9, 0.55], [0.9, 0.95], [0.55, 0.95]],
+      "candidate_labels": ["chair", "backpack", "suitcase"],
+      "min_confidence": 0.35,
+      "footprint_height_fraction": 0.2,
+      "enter_overlap": 0.3,
+      "exit_overlap": 0.15,
+      "person_occlusion_ratio": 0.2,
+      "confirm_ms": 5000,
+      "candidate_clear_ms": 1000,
+      "resolve_ms": 3000
+    }
+  ]
+}

@@ -36,20 +36,26 @@ class VideoStore:
 
     # -- public API ----------------------------------------------------------------------
     def list(self) -> list[dict]:
+        github = []
+        uploads = []
+        if self.settings.videos_dir.exists():
+            for meta_path in self.settings.videos_dir.glob("*/meta.json"):
+                meta = read_json(meta_path)
+                if not meta or not Path(meta.get("path", "")).exists():
+                    continue
+                if meta.get("kind") == "github":
+                    github.append(meta)
+                elif meta.get("kind") == "upload":
+                    uploads.append(meta)
         videos = []
         for video_id, path in self._sample_paths().items():
             try:
                 videos.append(self._sample_meta(video_id, path))
             except (ProbeError, OSError):
                 continue
-        uploads = []
-        if self.settings.videos_dir.exists():
-            for meta_path in self.settings.videos_dir.glob("upload-*/meta.json"):
-                meta = read_json(meta_path)
-                if meta and Path(meta.get("path", "")).exists():
-                    uploads.append(meta)
         uploads.sort(key=lambda m: m.get("created_at", ""), reverse=True)
-        return uploads + videos
+        github.sort(key=lambda m: m.get("repo_path", ""))
+        return uploads + github + videos
 
     def get(self, video_id: str) -> dict:
         check_id(video_id)
@@ -86,5 +92,5 @@ class VideoStore:
 
 def public(meta: dict) -> dict:
     """Strip server paths before sending video metadata to the browser."""
-    keys = ("video_id", "name", "kind", "duration_s", "width", "height", "fps", "frame_count", "created_at")
+    keys = ("video_id", "name", "kind", "repo_path", "duration_s", "width", "height", "fps", "frame_count", "created_at")
     return {k: meta.get(k) for k in keys}

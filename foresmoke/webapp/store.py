@@ -26,6 +26,7 @@ class Settings:
     sample_videos_dir: Path = REPO_ROOT
     bundled_zones: Path = REPO_ROOT / "configs" / "zones.json"
     target_hz: float = 5.0
+    github_branch: str = field(default_factory=lambda: os.environ.get("FORESMOKE_GITHUB_BRANCH", "webapp-mvp"))
     visual_review_enabled: bool = field(
         default_factory=lambda: os.environ.get("FORESMOKE_VISUAL_REVIEW", "").lower()
         in ("1", "true", "yes", "on")

@@ -5,6 +5,7 @@ import { Annotator } from './annotator.js';
 import { IncidentPanel } from './incidents.js';
 import { drawDetections, drawDraft, drawFrameBackdrop, drawZone } from './overlay.js';
 import { Player } from './player.js';
+import { buildReport } from './report.js';
 import { RunView } from './runview.js';
 import { at, clock } from './status.js';
 import { Timeline } from './timeline.js';
@@ -24,7 +25,131 @@ const state = {
   activeRunId: null,  // analysis in flight
   pollTimer: null,
   scrubbing: false,
+  libraryFilter: 'all',
+  page: 'overview',
+  previousPage: 'overview',
+  syncingVideos: false,
 };
+
+const PAGES = { overview: 'overviewPage', videos: 'videosPage', reviews: 'libraryPanel', workspace: 'workspacePage' };
+
+function showPage(page) {
+  if (!PAGES[page]) return;
+  if (page !== 'workspace' && !$('setupPanel').hidden) closeSetup();
+  state.page = page;
+  for (const [name, id] of Object.entries(PAGES)) $(id).hidden = name !== page;
+  for (const button of document.querySelectorAll('[data-app-nav]')) {
+    const selected = button.dataset.appNav === page;
+    button.classList.toggle('selected', selected);
+    if (selected) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
+  }
+  $('reportBtn').hidden = page !== 'workspace' || !state.run;
+  window.scrollTo(0, 0);
+}
+
+function openSetup() {
+  showPage('workspace');
+  $('setupPanel').hidden = false;
+  $('newAnalysisBtn').setAttribute('aria-expanded', 'true');
+  $('videoSelect').focus();
+}
+
+function closeSetup() {
+  if (annotator.active) stopDrawing();
+  $('setupPanel').hidden = true;
+  $('newAnalysisBtn').setAttribute('aria-expanded', 'false');
+}
+
+function openLibrary() {
+  if (state.page !== 'reviews') state.previousPage = state.page;
+  showPage('reviews');
+  $('runSearch').focus();
+}
+
+function closeLibrary() {
+  if (state.page === 'reviews') showPage(state.previousPage);
+}
+
+$('newAnalysisBtn').setAttribute('aria-controls', 'setupPanel');
+$('newAnalysisBtn').setAttribute('aria-expanded', 'false');
+$('newAnalysisBtn').addEventListener('click', () => {
+  if ($('setupPanel').hidden) openSetup(); else closeSetup();
+});
+$('setupCloseBtn').addEventListener('click', closeSetup);
+for (const button of document.querySelectorAll('[data-app-nav]')) {
+  button.addEventListener('click', () => {
+    if (button.dataset.appNav === 'reviews') openLibrary();
+    else showPage(button.dataset.appNav);
+  });
+}
+$('libraryCloseBtn').addEventListener('click', closeLibrary);
+$('globalRunStatus').addEventListener('click', openSetup);
+$('overviewNewBtn').addEventListener('click', openSetup);
+$('viewAllReviewsBtn').addEventListener('click', openLibrary);
+$('viewAllVideosBtn').addEventListener('click', () => showPage('videos'));
+$('videoUploadBtn').addEventListener('click', () => { openSetup(); $('uploadInput').click(); });
+$('runSearch').addEventListener('input', renderRuns);
+for (const button of document.querySelectorAll('[data-run-filter]')) {
+  button.addEventListener('click', () => {
+    state.libraryFilter = button.dataset.runFilter;
+    for (const option of document.querySelectorAll('[data-run-filter]')) {
+      const active = option === button;
+      option.classList.toggle('selected', active);
+      option.setAttribute('aria-pressed', String(active));
+    }
+    renderRuns();
+  });
+}
+
+function renderReviewSummary() {
+  const run = state.run;
+  $('reportBtn').hidden = state.page !== 'workspace' || !run;
+  $('jumpConfirmBtn').hidden = !run?.incidents.length;
+  $('jumpResolveBtn').hidden = !run?.incidents.some((i) => i.resolved);
+  if (!run) {
+    $('reviewEyebrow').textContent = state.video?.name || 'FOOTAGE REVIEW';
+    $('reviewTitle').textContent = state.video ? 'Ready to analyze' : 'Review an exit route';
+    $('reviewSummary').textContent = state.video
+      ? 'Select or draw the access zone, then run analysis to review findings.'
+      : 'Choose a recording, mark the access area, and analyze the footage.';
+    return;
+  }
+  const incidents = run.incidents;
+  const resolved = incidents.filter((i) => i.resolved).length;
+  const recorded = Boolean(run.meta.video_id);
+  $('reviewEyebrow').textContent = run.meta.video_name || (recorded ? 'RECORDED FOOTAGE' : 'SYNTHETIC SAMPLE');
+  if (!incidents.length) {
+    $('reviewTitle').textContent = 'No confirmed obstructions';
+    $('reviewSummary').textContent = 'No watched object met the confirmation rule in the marked access zone.';
+    return;
+  }
+  $('reviewTitle').textContent = `${incidents.length} confirmed obstruction${incidents.length === 1 ? '' : 's'}`;
+  const first = incidents[0];
+  const object = first.confirmed.evidence.objects?.[0]?.label || 'watched object';
+  $('reviewSummary').textContent = `${object[0].toUpperCase() + object.slice(1)} detected in the marked zone at ${at(first.confirmed.t_ms)}. ${resolved ? `${resolved} finding${resolved === 1 ? '' : 's'} later resolved after observed clearance.` : 'No observed resolution in this recording.'}`;
+}
+
+$('jumpConfirmBtn').addEventListener('click', () => {
+  const incident = state.run?.incidents[0];
+  if (incident) seekTo(incident.confirmed.evidence.t_ms);
+});
+$('jumpResolveBtn').addEventListener('click', () => {
+  const incident = state.run?.incidents.find((i) => i.resolved);
+  if (incident) seekTo(incident.resolved.evidence.t_ms);
+});
+$('reportBtn').addEventListener('click', () => {
+  if (!state.run) return;
+  const report = buildReport(state.run);
+  const blob = new Blob([JSON.stringify(report, null, 2) + '\n'], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `foresmoke-report-${state.run.meta.run_id}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
 
 // ---------------------------------------------------------------------------------------
 // Feedback
@@ -97,7 +222,7 @@ player.renderer = (ctx, rect, tMs) => {
 // ---------------------------------------------------------------------------------------
 // Videos
 function videoLabel(v) {
-  const kind = v.kind === 'sample' ? 'sample' : 'upload';
+  const kind = v.kind === 'upload' ? 'upload' : 'repository';
   return `${v.name} · ${v.duration_s.toFixed(1)} s · ${v.width}×${v.height} (${kind})`;
 }
 
@@ -148,6 +273,7 @@ async function selectVideo(videoId, { keepRun = false } = {}) {
   renderZones();
   updateRunButton();
   player.invalidate();
+  renderReviewSummary();
 }
 
 function checkBrowserFrame(video) {
@@ -176,6 +302,8 @@ $('uploadInput').addEventListener('change', async (e) => {
   try {
     const meta = await api.uploadVideo(file, (f) => { bar.firstElementChild.style.width = `${Math.round(f * 100)}%`; });
     state.videos = await api.videos();
+    renderVideoCatalog();
+    renderOverview();
     toast(`Uploaded ${meta.name}: ${meta.duration_s.toFixed(1)} s, ${meta.width}×${meta.height}.`, 'ok');
     await selectVideo(meta.video_id);
   } catch (error) {
@@ -355,14 +483,170 @@ function runTitle(r) {
   return r.run_id;
 }
 
+function latestReviewsByVideo() {
+  const latest = new Map();
+  const completed = state.runs.filter((r) => r.state === 'done' && r.video_id)
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+  for (const run of completed) if (!latest.has(run.video_id)) latest.set(run.video_id, run);
+  return latest;
+}
+
+function catalogVideos() {
+  const remoteRootNames = new Set(state.videos.filter((v) => v.kind === 'github' && !v.repo_path?.includes('/'))
+    .map((v) => v.repo_path));
+  return state.videos.filter((v) => v.kind !== 'sample' || !remoteRootNames.has(v.name));
+}
+
+function listMessage(root, message) {
+  const line = document.createElement('p');
+  line.className = 'list-empty';
+  line.textContent = message;
+  root.append(line);
+}
+
+function overviewRow(title, detail, action, tone = '') {
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = `overview-row ${tone}`;
+  const copy = document.createElement('span');
+  copy.className = 'overview-row-copy';
+  const name = document.createElement('strong'); name.textContent = title;
+  const sub = document.createElement('small'); sub.textContent = detail;
+  copy.append(name, sub);
+  const arrow = document.createElement('span');
+  arrow.className = 'row-arrow'; arrow.textContent = '›'; arrow.setAttribute('aria-hidden', 'true');
+  row.append(copy, arrow);
+  row.addEventListener('click', action);
+  return row;
+}
+
+function renderOverview() {
+  const latest = latestReviewsByVideo();
+  const reviewed = [...latest.values()];
+  const videos = catalogVideos();
+  const confirmed = reviewed.reduce((count, run) => count + (run.confirmed_count || 0), 0);
+  const open = reviewed.reduce((count, run) => count + Math.max(0, (run.confirmed_count || 0) - (run.resolved_count || 0)), 0);
+  $('metricOpen').textContent = String(open);
+  $('metricConfirmed').textContent = String(confirmed);
+  $('metricReviewed').textContent = String(reviewed.length);
+  $('metricVideos').textContent = String(videos.length);
+  $('attentionCount').textContent = open ? `${open} open` : 'Up to date';
+
+  const attention = $('attentionList');
+  attention.innerHTML = '';
+  const needingAttention = reviewed.filter((run) => (run.confirmed_count || 0) > (run.resolved_count || 0));
+  if (!needingAttention.length) listMessage(attention, 'No open findings in the latest completed review of each video.');
+  for (const run of needingAttention) {
+    const count = (run.confirmed_count || 0) - (run.resolved_count || 0);
+    attention.append(overviewRow(runTitle(run), `${count} finding${count === 1 ? '' : 's'} without observed clearance · ${fmtDate(run.created_at)}`,
+      () => loadRun(run.run_id), 'needs-attention'));
+  }
+
+  const recent = $('recentReviews');
+  recent.innerHTML = '';
+  if (!reviewed.length) listMessage(recent, 'No recorded-video reviews yet. Analyze a video to create the first one.');
+  for (const run of reviewed.slice(0, 5)) {
+    recent.append(overviewRow(runTitle(run), `${run.confirmed_count || 0} confirmed · ${run.resolved_count || 0} resolved · ${fmtDate(run.created_at)}`,
+      () => loadRun(run.run_id)));
+  }
+
+  const awaiting = $('awaitingList');
+  awaiting.innerHTML = '';
+  const unreviewed = videos.filter((video) => !latest.has(video.video_id));
+  if (!unreviewed.length) listMessage(awaiting, videos.length ? 'Every available video has a completed review.' : 'Videos from GitHub and uploads will appear here.');
+  for (const video of unreviewed.slice(0, 8)) {
+    awaiting.append(overviewRow(video.name, `${video.duration_s.toFixed(1)} s · ${video.kind === 'upload' ? 'Uploaded' : 'GitHub repository'}`,
+      () => analyzeVideo(video.video_id)));
+  }
+}
+
+function renderVideoCatalog() {
+  const root = $('videoCatalog');
+  root.innerHTML = '';
+  const videos = catalogVideos();
+  const latest = latestReviewsByVideo();
+  if (!videos.length) { listMessage(root, 'No videos available yet. Sync GitHub or upload a recording.'); return; }
+  for (const video of videos) {
+    const run = latest.get(video.video_id);
+    const card = document.createElement('article');
+    card.className = 'video-card';
+    const preview = document.createElement('div');
+    preview.className = 'video-card-preview';
+    const image = new Image();
+    image.loading = 'lazy';
+    image.alt = `Preview of ${video.name}`;
+    image.src = api.videoFrameUrl(video.video_id, Math.min(1000, video.duration_s * 250));
+    image.onerror = () => { image.remove(); preview.classList.add('preview-unavailable'); };
+    preview.append(image);
+    const duration = document.createElement('span');
+    duration.className = 'video-duration'; duration.textContent = `${video.duration_s.toFixed(1)} s`;
+    preview.append(duration);
+    const body = document.createElement('div'); body.className = 'video-card-body';
+    const source = document.createElement('span'); source.className = 'video-source';
+    source.textContent = video.kind === 'upload' ? 'UPLOAD' : 'GITHUB REPOSITORY';
+    const title = document.createElement('h2'); title.textContent = video.name;
+    const meta = document.createElement('p'); meta.className = 'video-card-meta';
+    meta.textContent = `${video.width} × ${video.height} px · ${run ? `${run.confirmed_count || 0} findings in latest review` : 'Not reviewed yet'}`;
+    const actions = document.createElement('div'); actions.className = 'card-actions';
+    const analyze = document.createElement('button'); analyze.type = 'button'; analyze.className = 'btn btn-small';
+    analyze.textContent = 'Analyze'; analyze.addEventListener('click', () => analyzeVideo(video.video_id));
+    actions.append(analyze);
+    if (run) {
+      const view = document.createElement('button'); view.type = 'button'; view.className = 'btn btn-small btn-ghost';
+      view.textContent = 'Open review'; view.addEventListener('click', () => loadRun(run.run_id));
+      actions.append(view);
+    }
+    body.append(source, title, meta, actions);
+    card.append(preview, body);
+    root.append(card);
+  }
+}
+
+async function analyzeVideo(videoId) {
+  showPage('workspace');
+  try { await selectVideo(videoId); openSetup(); } catch (error) { toast(`Could not open video: ${error.message}`); }
+}
+
+async function syncGithubVideos() {
+  if (state.syncingVideos) return;
+  state.syncingVideos = true;
+  $('syncGithubBtn').disabled = true;
+  $('githubSyncStatus').textContent = 'Checking GitHub for new videos…';
+  try {
+    const result = await api.syncGithubVideos();
+    state.videos = await api.videos();
+    renderVideoSelect();
+    renderVideoCatalog();
+    renderOverview();
+    const available = result.found - result.errors.length;
+    $('githubSyncStatus').textContent = `${available} GitHub video${available === 1 ? '' : 's'} available · ${result.downloaded} newly imported${result.errors.length ? ` · ${result.errors.length} could not be imported` : ''}.`;
+  } catch (error) {
+    $('githubSyncStatus').textContent = error.status === 404
+      ? 'Restart the ForeSmoke server to enable GitHub sync.'
+      : `GitHub sync is unavailable: ${error.message}. Existing videos remain available.`;
+  } finally {
+    state.syncingVideos = false;
+    $('syncGithubBtn').disabled = false;
+  }
+}
+
+$('syncGithubBtn').addEventListener('click', syncGithubVideos);
+
 function renderRuns() {
   const list = $('runList');
   list.innerHTML = '';
-  if (!state.runs.length) {
-    list.append(Object.assign(document.createElement('li'), { className: 'muted small', textContent: 'No runs yet.' }));
+  $('libraryCount').textContent = String(state.runs.filter((r) => r.state === 'done').length);
+  const query = $('runSearch').value.trim().toLowerCase();
+  const matching = state.runs.filter((r) => {
+    if (state.libraryFilter === 'findings' && !(r.confirmed_count > 0)) return false;
+    if (state.libraryFilter === 'clear' && !(r.state === 'done' && r.confirmed_count === 0)) return false;
+    return !query || [runTitle(r), r.zone_name, r.run_id].some((value) => String(value || '').toLowerCase().includes(query));
+  });
+  if (!matching.length) {
+    list.append(Object.assign(document.createElement('li'), { className: 'library-empty', textContent: state.runs.length ? 'No reviews match these filters.' : 'No reviews yet. Start with New review.' }));
     return;
   }
-  for (const r of state.runs) {
+  for (const r of matching) {
     const li = document.createElement('li');
     const b = document.createElement('button');
     b.type = 'button';
@@ -398,13 +682,17 @@ function unloadRun() {
   panel.clear();
   renderRuns();
   player.invalidate();
+  renderReviewSummary();
 }
 
 async function loadRun(runId) {
   if (annotator.active) stopDrawing();
+  const previousPage = state.page;
+  showPage('workspace');
   try {
     const [meta, states, events, observations, zones] = await Promise.all([
-      api.run(runId), api.states(runId), api.events(runId), api.observations(runId), api.runZones(runId),
+      api.run(runId), api.states(runId), api.events(runId).catch(() => []),
+      api.observations(runId).catch(() => []), api.runZones(runId).catch(() => null),
     ]);
     const view = new RunView({ meta, states, events, observations, zones });
     state.run = view;
@@ -421,14 +709,19 @@ async function loadRun(runId) {
     }
     timeline.render(view, Math.max(player.durationMs, view.durationMs));
     panel.load(view);
-    player.seek(0);
-    panel.update(0);
+    const openingTime = view.incidents[0]?.confirmed.evidence.t_ms ?? 0;
+    player.seek(openingTime);
+    panel.update(openingTime);
     const confirmed = view.incidents.length;
     const resolved = view.incidents.filter((i) => i.resolved).length;
     $('loadedRun').textContent = `${runTitle(meta)} · ${confirmed} confirmed, ${resolved} resolved`;
     renderRuns();
     updateRunButton();
+    renderReviewSummary();
+    closeSetup();
+    showPage('workspace');
   } catch (error) {
+    showPage(previousPage);
     toast(`Could not open run: ${error.message}`);
   }
 }
@@ -453,6 +746,11 @@ function updateRunButton() {
   button.textContent = busy ? 'Analysis running…' : 'Run analysis';
 }
 
+function updateGlobalRunStatus(label = 'Analyzing footage…') {
+  $('globalRunStatus').hidden = !state.activeRunId;
+  $('globalRunText').textContent = label;
+}
+
 function showRunMessage(kind, text, extra) {
   const box = $('runMessage');
   box.hidden = false;
@@ -474,6 +772,8 @@ async function startRun() {
     trackRun(meta.run_id);
     state.runs = await api.runs();
     renderRuns();
+    renderOverview();
+    renderVideoCatalog();
   } catch (error) {
     showRunMessage('error', error.message);
   }
@@ -481,6 +781,7 @@ async function startRun() {
 
 function trackRun(runId) {
   state.activeRunId = runId;
+  updateGlobalRunStatus();
   $('runProgress').hidden = false;
   $('runProgress').querySelector('.progress span').style.width = '0%';
   $('runProgressText').textContent = 'Starting analysis (loading the detection model)…';
@@ -497,6 +798,7 @@ async function poll() {
     status = await api.run(runId);
   } catch (error) {
     $('runProgressText').textContent = `Waiting for server… (${error.message})`;
+    updateGlobalRunStatus('Waiting for server…');
     state.pollTimer = setTimeout(poll, POLL_MS * 2);
     return;
   }
@@ -504,6 +806,7 @@ async function poll() {
   $('runProgress').querySelector('.progress span').style.width = `${pct}%`;
   $('runElapsed').textContent = `${Math.round(status.elapsed_s || 0)} s`;
   if (status.state === 'running') {
+    updateGlobalRunStatus(status.processed_observations ? `Analyzing footage · ${pct}%` : 'Starting analysis…');
     $('runProgressText').textContent = status.processed_observations
       ? `Analysed ${status.processed_observations} of ~${status.expected_observations} frames (${pct}%)`
       : 'Starting analysis (loading the detection model)…';
@@ -511,10 +814,14 @@ async function poll() {
     return;
   }
   state.activeRunId = null;
+  updateGlobalRunStatus();
   $('runProgress').hidden = true;
   updateRunButton();
   state.runs = await api.runs().catch(() => state.runs);
   renderRuns();
+  renderOverview();
+  renderVideoCatalog();
+  renderReviewSummary();
   if (status.state === 'done') {
     const events = await api.events(runId).catch(() => []);
     const confirmed = events.filter((e) => e.event_type === 'incident_confirmed').length;
@@ -531,8 +838,10 @@ async function poll() {
     details.append(summary, pre);
     if (status.state === 'cancelled') {
       showRunMessage('warn', 'Analysis cancelled. Any partial output stays in its own run folder.', details);
+      toast('Analysis cancelled.', 'warn');
     } else {
       showRunMessage('error', status.error || 'Analysis failed.', details);
+      toast(status.error || 'Analysis failed. Open New review for details.');
     }
   }
 }
@@ -556,12 +865,17 @@ $('scrub').addEventListener('pointerup', () => { state.scrubbing = false; });
 $('scrub').addEventListener('input', (e) => { player.pause(); player.seek((Number(e.target.value) / 1000) * player.durationMs); });
 $('debugToggle').addEventListener('change', () => player.invalidate());
 window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (!$('libraryPanel').hidden) { closeLibrary(); e.preventDefault(); }
+    else if (annotator.active) { stopDrawing(); e.preventDefault(); }
+    else if (!$('setupPanel').hidden) { closeSetup(); e.preventDefault(); }
+    return;
+  }
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.tagName === 'BUTTON')) return;
   if (e.key === ' ') { e.preventDefault(); if (!annotator.active) player.toggle(); }
   if (e.key === 'ArrowLeft') { e.preventDefault(); player.step(-1); }
   if (e.key === 'ArrowRight') { e.preventDefault(); player.step(1); }
-  if (e.key === 'Escape' && annotator.active) stopDrawing();
 });
 $('video').addEventListener('play', () => { if (annotator.active) player.pause(); });
 
@@ -574,19 +888,22 @@ async function boot() {
   try {
     [state.videos, state.zones, state.runs] = await Promise.all([api.videos(), api.zones(), api.runs()]);
   } catch (error) {
+    $('stageEmpty').textContent = 'Could not load recordings. Check the server, then refresh this page.';
     toast(`Could not reach the ForeSmoke server: ${error.message}`);
     return;
   }
   renderVideoSelect();
   renderZones();
   renderRuns();
+  renderReviewSummary();
+  renderOverview();
+  renderVideoCatalog();
+  showPage('overview');
   const running = state.runs.find((r) => r.state === 'running');
   if (running) trackRun(running.run_id);
-  // Open the most recent finished run so the viewer works before any new analysis.
-  const finished = state.runs.find((r) => r.state === 'done' && r.files && r.files.includes('states.jsonl'));
-  if (finished) await loadRun(finished.run_id);
-  else if (state.videos.length) await selectVideo(state.videos[0].video_id);
+  $('stageEmpty').textContent = 'Choose a video from Videos or start a new review.';
   updateRunButton();
+  syncGithubVideos();
 }
 
 boot();

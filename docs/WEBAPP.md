@@ -3,6 +3,26 @@
 A browser tool for reviewing exit obstructions in recorded video: load a clip, draw the exit
 zone, run analysis, and review incidents. No JSON editing or terminal work is needed after launch.
 
+The app opens on **Overview**, where a building manager sees open findings, confirmed findings,
+reviewed recordings, and available videos. These totals use the latest completed analysis per
+recording and exclude the synthetic sample. **Videos** lists footage from the GitHub branch and
+local uploads. **Reviews** holds saved analyses. **Workspace** shows one review's video, timeline,
+status and evidence; a completed review opens at its first confirmed finding. **New review** opens
+the video, zone and analysis controls in the workspace. The synthetic sample is still available
+in Reviews, clearly labeled as synthetic.
+
+Search Reviews by recording or zone and filter for runs with or without findings. While analysis
+runs, the top bar shows progress even when the setup drawer is closed. **Download report** saves a JSON summary of the loaded run,
+including the exact source-video times, configured rules, and engine evidence for each finding.
+
+The Videos tab automatically fetches the configured Git branch once when the page loads and has a
+**Sync GitHub videos** button for later pushes. It uses the checkout's existing Git remote and
+credentials, checks all video files in that branch (including subdirectories), and caches new or
+changed files under `webapp_data/videos/` without overwriting the checkout. Defaults are
+`origin` and `webapp-mvp`; set `FORESMOKE_GITHUB_BRANCH` to choose another branch. Sync requires
+network access and a Git checkout with permission to fetch. Existing local videos remain usable
+when GitHub is unavailable.
+
 The webapp only shows what the engine reports and collects a zone config. Detection, timing and
 the CLEAR / POSSIBLE / CONFIRMED / RESOLVED decisions come from the existing
 `python -m foresmoke.demo` CLI, which the server runs as a subprocess for each analysis.

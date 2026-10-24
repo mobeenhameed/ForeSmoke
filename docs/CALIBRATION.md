@@ -1,7 +1,8 @@
-# Replace the synthetic zone before the real demo
+# Calibrate every new camera view
 
-configs/zones.json is copied from the brief: normalized x=0.30..0.80, y=0.55..0.95 on
-a 1280x720 reference. It is **not calibrated to a real exit**.
+`configs/zones.json` is calibrated to the bundled 464×832 chair footage and uses
+`exit-view-v2`. It is not a calibration for a different camera or scene. The original
+1280×720 synthetic example is kept at `tests/fixtures/zones.json` for tests.
 
 1. Save an original, unmirrored frame from Person 1's fixed camera.
 2. Identify the floor/access region that should remain clear; do not outline the exit sign.

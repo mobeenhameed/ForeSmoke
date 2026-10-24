@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from . import videos as video_mod
 from . import zones as zone_mod
+from .github_sync import GitHubSyncError, GitHubVideoSync
 from .probe import ProbeError, read_frame_jpeg
 from .runner import RunManager
 from .sample import seed
@@ -54,6 +55,7 @@ def create_app(settings: Settings | None = None, *, seed_sample: bool = True) ->
     settings = settings or Settings()
     settings.ensure()
     video_store = video_mod.VideoStore(settings)
+    github_videos = GitHubVideoSync(settings)
     zone_store = zone_mod.ZoneStore(settings)
     runs = RunManager(settings)
 
@@ -88,6 +90,13 @@ def create_app(settings: Settings | None = None, *, seed_sample: bool = True) ->
     @app.get("/api/videos")
     def list_videos():
         return [video_mod.public(v) for v in video_store.list()]
+
+    @app.post("/api/videos/github-sync")
+    def sync_github_videos():
+        try:
+            return github_videos.sync()
+        except GitHubSyncError as error:
+            raise HTTPException(502, str(error)) from error
 
     @app.post("/api/videos")
     def upload_video(file: UploadFile = File(...)):

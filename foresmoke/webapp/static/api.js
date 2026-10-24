@@ -52,6 +52,7 @@ async function jsonl(path) {
 
 export const api = {
   videos: () => json('/api/videos'),
+  syncGithubVideos: () => json('/api/videos/github-sync', { method: 'POST' }),
   uploadVideo(file, onProgress) {
     // XMLHttpRequest exposes upload progress; fetch does not.
     return new Promise((resolve, reject) => {
@@ -71,6 +72,7 @@ export const api = {
     });
   },
   videoUrl: (id) => `/api/videos/${encodeURIComponent(id)}/file`,
+  videoFrameUrl: (id, tMs = 0, width = 480) => `/api/videos/${encodeURIComponent(id)}/frame?t_ms=${Math.max(0, Math.round(tMs))}&width=${width}`,
   zones: () => json('/api/zones'),
   validateZone: (body) => post('/api/zones/validate', body),
   saveZone: (body) => post('/api/zones', body),

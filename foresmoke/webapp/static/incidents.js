@@ -20,7 +20,8 @@ function objectsText(event) {
 
 /** Evidence thumbnail: the source frame at evidence.t_ms with the zone and evidence boxes drawn on top. */
 export function thumbnail(view, event, zone, { label } = {}) {
-  const { width, height } = view.meta;
+  const width = view.meta.width || 16;
+  const height = view.meta.height || 9;
   const wrap = el('figure', 'thumb');
   wrap.style.aspectRatio = `${width} / ${height}`;
   if (view.meta.video_id) {
@@ -75,11 +76,11 @@ export class IncidentPanel {
     this.signature = null;
     this.cards.clear();
     this.statusRoot.innerHTML = '';
-    this.statusRoot.append(el('p', 'muted', message || 'No run loaded. Pick a previous run or run an analysis.'));
+    this.statusRoot.append(el('p', 'muted', message || 'Load or analyze a recording to see its status.'));
     this.activeRoot.innerHTML = '';
     this.activeRoot.append(el('p', 'muted', 'No active incident.'));
     this.historyRoot.innerHTML = '';
-    this.historyRoot.append(el('p', 'muted', 'Incidents from the loaded run appear here.'));
+    this.historyRoot.append(el('p', 'muted', 'Confirmed findings will appear here.'));
   }
 
   load(view) {
@@ -100,21 +101,21 @@ export class IncidentPanel {
     for (const inc of view.incidents) {
       const zone = view.zoneById.get(inc.zone_id);
       const card = el('article', 'incident-card');
-      card.tabIndex = 0;
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-label', `Incident ${inc.number} in ${inc.zone_id}, confirmed at ${at(inc.confirmed.t_ms)}. Jump to confirmation.`);
       const head = el('header', 'incident-head');
-      head.append(el('strong', null, `Incident ${inc.number}`));
+      head.append(el('strong', null, `Finding ${inc.number}`));
       const state = inc.resolved
         ? { phase: 'RESOLVED', observation_state: 'observed' }
         : { phase: 'CONFIRMED', observation_state: 'observed' };
       head.append(chip(state));
       card.append(head);
 
+      const firstObject = inc.confirmed.evidence.objects?.[0]?.label || 'Watched object';
+      const outcome = inc.resolved ? `Clear at ${at(inc.resolved.t_ms)}` : 'Still open at end of run';
+      card.append(el('p', 'incident-summary', `${firstObject} · confirmed ${at(inc.confirmed.t_ms)} · ${outcome}`));
+
       const thumbs = el('div', 'thumbs');
       thumbs.append(thumbnail(view, inc.confirmed, zone, { label: 'Confirmed' }));
       if (inc.resolved) thumbs.append(thumbnail(view, inc.resolved, zone, { label: 'Resolved' }));
-      card.append(thumbs);
 
       const dl = el('dl', 'facts');
       const fact = (k, v) => { dl.append(el('dt', null, k), el('dd', null, v)); };
@@ -132,23 +133,22 @@ export class IncidentPanel {
           ? 'Not resolved — the view became unavailable before a clear interval was observed'
           : 'Not resolved in this recording');
       }
-      card.append(dl);
+      const details = el('details', 'incident-evidence');
+      details.append(el('summary', null, 'View evidence and timing'), thumbs, dl);
+      card.append(details);
 
       const actions = el('div', 'card-actions');
-      const goConfirm = el('button', 'btn btn-small', `Jump to confirmation · ${at(inc.confirmed.evidence.t_ms)}`);
+      const goConfirm = el('button', 'btn btn-small', `View at ${at(inc.confirmed.evidence.t_ms)}`);
       goConfirm.type = 'button';
       goConfirm.addEventListener('click', (e) => { e.stopPropagation(); this.onSeek(inc.confirmed.evidence.t_ms); });
       actions.append(goConfirm);
       if (inc.resolved) {
-        const goResolve = el('button', 'btn btn-small btn-ghost', `Jump to resolution · ${at(inc.resolved.evidence.t_ms)}`);
+        const goResolve = el('button', 'btn btn-small btn-ghost', `Clear at ${at(inc.resolved.evidence.t_ms)}`);
         goResolve.type = 'button';
         goResolve.addEventListener('click', (e) => { e.stopPropagation(); this.onSeek(inc.resolved.evidence.t_ms); });
         actions.append(goResolve);
       }
       card.append(actions);
-      const seek = () => this.onSeek(inc.confirmed.evidence.t_ms);
-      card.addEventListener('click', seek);
-      card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); seek(); } });
       this.cards.set(inc.incident_id, card);
       this.historyRoot.append(card);
     }

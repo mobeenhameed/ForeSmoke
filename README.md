@@ -52,7 +52,7 @@ configuration contract, exact command, synthetic demo, and recording guide.
 
 ## Combined live demonstration
 
-First calibrate `configs/zones.json` using the actual fixed iPhone view. Its supplied polygon is SYNTHETIC and is not your exit. See `docs/CALIBRATION.md`. Moving, cropping or mirroring the camera requires new calibration/view ID.
+`configs/zones.json` is a saved calibration for the bundled chair footage (464×832, `exit-view-v2`). Calibrate a new zone for any other fixed camera view before interpreting results. The original synthetic test zone lives in `tests/fixtures/zones.json`. See `docs/CALIBRATION.md`. Moving, cropping or mirroring the camera requires a new calibration and view ID.
 
 ```bash
 python -m foresmoke.demo --source 1 --source-kind live --zones configs/zones.json --run-dir runs/live-01 --preview

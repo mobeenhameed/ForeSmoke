@@ -1,0 +1,12 @@
+{
+  "config_id": "zone-20261024-180247-587892",
+  "name": "Cam1 extinguisher access expanded",
+  "source": "user",
+  "video_id": "sample-Cam1",
+  "frame_t_ms": 5000,
+  "camera_name": "Cam1",
+  "view_name": "extinguisher-wall-expanded",
+  "created_at": "2026-10-24T22:02:47+00:00",
+  "path": "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\webapp_data\\zones\\zone-20261024-180247-587892.json",
+  "proposal_provenance": null
+}

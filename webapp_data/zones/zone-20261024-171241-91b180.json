@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "camera_id": "cam01",
+  "view_id": "exit-view-91b180",
+  "reference_frame": {
+    "width": 464,
+    "height": 832
+  },
+  "max_observation_gap_ms": 1000,
+  "live_stale_after_ms": 2000,
+  "assets": [
+    {
+      "asset_id": "Recessed-red-fire-extinguisher-cabinet-extinguis",
+      "asset_type": "fire_extinguisher",
+      "name": "Recessed red fire extinguisher cabinet",
+      "camera_id": "cam01",
+      "view_id": "exit-view-91b180",
+      "bbox_xyxy": [
+        0.303879,
+        0.456731,
+        0.463362,
+        0.600962
+      ],
+      "point": null,
+      "reference_image_id": "4db8c64d4f2f12d0eb9991417e3fce75ea4ee55f9ac8a4bd"
+    }
+  ],
+  "zones": [
+    {
+      "zone_id": "Recessed-red-fire-extinguisher-cabinet",
+      "name": "Recessed Red Fire Extinguisher Cabinet",
+      "zone_type": "extinguisher_access",
+      "hazard_type": "blocked_extinguisher_access",
+      "protected_asset_id": "Recessed-red-fire-extinguisher-cabinet-extinguis",
+      "polygon": [
+        [
+          0.290948,
+          0.77524
+        ],
+        [
+          0.538793,
+          0.679087
+        ],
+        [
+          0.711207,
+          0.649038
+        ],
+        [
+          0.926724,
+          0.769231
+        ],
+        [
+          0.711207,
+          0.913462
+        ],
+        [
+          0.344828,
+          0.877404
+        ],
+        [
+          0.319999,
+          0.827115
+        ]
+      ],
+      "candidate_labels": [
+        "chair",
+        "backpack",
+        "suitcase"
+      ],
+      "min_confidence": 0.35,
+      "footprint_height_fraction": 0.2,
+      "enter_overlap": 0.3,
+      "exit_overlap": 0.15,
+      "person_occlusion_ratio": 0.2,
+      "confirm_ms": 5000,
+      "candidate_clear_ms": 1000,
+      "resolve_ms": 3000
+    }
+  ]
+}

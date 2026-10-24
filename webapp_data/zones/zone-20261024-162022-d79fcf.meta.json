@@ -1,0 +1,11 @@
+{
+  "config_id": "zone-20261024-162022-d79fcf",
+  "name": "east_exit",
+  "source": "user",
+  "video_id": "upload-20261024-161842-f3de6b",
+  "frame_t_ms": 0,
+  "camera_name": "cam01",
+  "view_name": "exit-view",
+  "created_at": "2026-10-24T20:20:22+00:00",
+  "path": "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\webapp_data\\zones\\zone-20261024-162022-d79fcf.json"
+}

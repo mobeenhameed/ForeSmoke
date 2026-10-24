@@ -1,7 +1,7 @@
 {
   "functions": {
     "app.py": {
-      "includeFiles": "{foresmoke/**,configs/**}",
+      "includeFiles": "{foresmoke/**,configs/**,webapp_data/runs/**,webapp_data/zones/**,runs/run-*/**}",
       "maxDuration": 300
     }
   }

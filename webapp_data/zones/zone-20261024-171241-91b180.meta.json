@@ -1,0 +1,20 @@
+{
+  "config_id": "zone-20261024-171241-91b180",
+  "name": "Recessed red fire extinguisher cabinet",
+  "source": "user",
+  "video_id": "sample-extinguisher",
+  "frame_t_ms": 0,
+  "camera_name": "cam01",
+  "view_name": "exit-view",
+  "created_at": "2026-10-24T21:12:41+00:00",
+  "path": "C:\\Users\\mobee\\Desktop\\hackachussets\\ForeSmoke\\webapp_data\\zones\\zone-20261024-171241-91b180.json",
+  "proposal_provenance": {
+    "job_id": "proposal-20261024-171113-168038",
+    "candidate_key": "candidate_1",
+    "requested_model": "claude-sonnet-5.5",
+    "source_timestamp_ms": 0,
+    "source_frame_index": 0,
+    "submitted_image_sha256": "4db8c64d4f2f12d0eb9991417e3fce75ea4ee55f9ac8a4bd5dc8c37f77d28148",
+    "user_edited": true
+  }
+}

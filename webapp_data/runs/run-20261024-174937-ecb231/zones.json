@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "camera_id": "Cam2",
+  "view_id": "live-camera-1d38a2",
+  "reference_frame": {
+    "width": 720,
+    "height": 480
+  },
+  "max_observation_gap_ms": 1000,
+  "live_stale_after_ms": 2000,
+  "assets": [],
+  "zones": [
+    {
+      "zone_id": "AI-access-Cam2",
+      "name": "Ai Access Cam2",
+      "zone_type": "exit_access",
+      "hazard_type": "blocked_exit",
+      "protected_asset_id": null,
+      "polygon": [
+        [
+          0.347222,
+          0.208333
+        ],
+        [
+          0.675,
+          0.4125
+        ],
+        [
+          0.666667,
+          0.5
+        ],
+        [
+          0.541667,
+          0.545833
+        ],
+        [
+          0.347222,
+          0.416667
+        ],
+        [
+          0.263889,
+          0.266667
+        ]
+      ],
+      "candidate_labels": [
+        "chair",
+        "backpack",
+        "suitcase"
+      ],
+      "min_confidence": 0.35,
+      "footprint_height_fraction": 0.2,
+      "enter_overlap": 0.3,
+      "exit_overlap": 0.15,
+      "person_occlusion_ratio": 0.2,
+      "confirm_ms": 5000,
+      "candidate_clear_ms": 1000,
+      "resolve_ms": 3000
+    }
+  ]
+}

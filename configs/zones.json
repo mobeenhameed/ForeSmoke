@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
   "camera_id": "cam01",
-  "view_id": "exit-view-v1",
+  "view_id": "exit-view-v2",
   "reference_frame": {
-    "width": 1280,
-    "height": 720
+    "width": 464,
+    "height": 832
   },
   "max_observation_gap_ms": 1000,
   "live_stale_after_ms": 2000,
@@ -14,20 +14,20 @@
       "hazard_type": "blocked_exit",
       "polygon": [
         [
-          0.3,
-          0.55
+          0.356379,
+          0.5975
         ],
         [
-          0.8,
-          0.55
+          0.721724,
+          0.6025
         ],
         [
-          0.8,
-          0.95
+          0.759828,
+          0.87875
         ],
         [
-          0.3,
-          0.95
+          0.338448,
+          0.86875
         ]
       ],
       "candidate_labels": [
@@ -46,4 +46,3 @@
     }
   ]
 }
-

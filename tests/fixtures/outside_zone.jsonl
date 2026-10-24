@@ -35,3 +35,4 @@
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":34,"t_ms":6800,"tracker_epoch":0,"status":"ok","frame":{"index":204,"width":1280,"height":720,"frame_ref":null},"detections":[{"label":"chair","confidence":0.91,"bbox_xyxy":[0.38,0.8,0.56,1.0],"track_id":"7"}],"error":null}
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":35,"t_ms":7000,"tracker_epoch":0,"status":"ok","frame":{"index":210,"width":1280,"height":720,"frame_ref":null},"detections":[{"label":"chair","confidence":0.91,"bbox_xyxy":[0.38,0.8,0.56,1.0],"track_id":"7"}],"error":null}
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":36,"t_ms":7000,"tracker_epoch":0,"status":"eof","frame":null,"detections":[],"error":null}
+

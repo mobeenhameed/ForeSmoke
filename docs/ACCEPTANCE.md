@@ -66,3 +66,4 @@ NumPy 2.4.6. No model weights/GPU libraries are required.
 Wire contract unchanged. Shared definitions were bootstrapped because none existed.
 Additive convenience APIs: live_watchdog=False for file replay, invalidate_input for parse
 errors, read-only input_ended. Geometry comparisons tolerate 1e-12 floating-point error.
+

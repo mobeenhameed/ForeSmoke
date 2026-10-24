@@ -190,3 +190,4 @@ def test_duplicate_eof_does_not_close_engine(config):
     assert not engine.input_ended
     engine.process(observation(200), 2)
     assert engine.snapshots()[0].positive_evidence_ms == 200
+

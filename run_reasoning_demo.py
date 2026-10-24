@@ -18,3 +18,4 @@ if __name__ == "__main__":
     if status == 0:
         print(f"Events and state snapshots saved in {output}", flush=True)
     raise SystemExit(status)
+

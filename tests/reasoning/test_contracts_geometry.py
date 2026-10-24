@@ -143,3 +143,4 @@ def test_shared_import_does_not_load_geometry():
         "import sys; import foresmoke.shared.contracts; assert 'shapely' not in sys.modules"],
         cwd=ROOT, capture_output=True, text=True)
     assert process.returncode == 0, process.stderr
+

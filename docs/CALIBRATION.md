@@ -19,3 +19,4 @@ differences above 1% are rejected. Different resolution is accepted for identica
 
 Camera motion/cropping/mirroring is not automatically detected. Recalibrate after a changed
 view. Image overlap does not measure physical or legal passage width.
+

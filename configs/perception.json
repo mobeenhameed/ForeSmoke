@@ -1,0 +1,9 @@
+{
+  "model": "yolo26n.pt",
+  "confidence": 0.15,
+  "image_size": 640,
+  "target_observations_per_second": 5,
+  "tracker": "bytetrack.yaml",
+  "device": "cpu",
+  "save_frames": false
+}

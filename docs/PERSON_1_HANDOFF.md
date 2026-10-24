@@ -100,3 +100,4 @@ added to the obstruction allowlist in contract 1.0.
 6. Demonstrate walking person, sustained chair obstruction, removal, and camera failure.
 
 All delivered observation fixtures are synthetic. Real-camera acceptance remains pending.
+

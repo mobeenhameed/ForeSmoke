@@ -100,3 +100,4 @@ def test_duplicate_eof_does_not_truncate_replay(tmp_path):
     assert process.returncode == 0, process.stderr
     assert [e["t_ms"] for e in read(tmp_path / "events.jsonl")] == [5000, 8200]
     assert read(tmp_path / "states.jsonl")[-1]["observation_reason"] == "source_ended"
+

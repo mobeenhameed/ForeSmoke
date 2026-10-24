@@ -26,3 +26,4 @@
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":25,"t_ms":5000,"tracker_epoch":0,"status":"ok","frame":{"index":150,"width":1280,"height":720,"frame_ref":null},"detections":[{"label":"chair","confidence":0.91,"bbox_xyxy":[0.38,0.28,0.56,0.84],"track_id":"7"}],"error":null}
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":26,"t_ms":5200,"tracker_epoch":0,"status":"unavailable","frame":null,"detections":[],"error":"capture_failed"}
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":27,"t_ms":5200,"tracker_epoch":0,"status":"eof","frame":null,"detections":[],"error":null}
+

@@ -10,15 +10,18 @@ requires-python = ">=3.11"
 dependencies = ["pydantic>=2,<3"]
 
 [project.optional-dependencies]
+perception = ["opencv-python>=4.8", "numpy>=1.26", "ultralytics>=8.3"]
 reasoning = ["shapely>=2,<3"]
 dev = ["pytest>=8,<10", "jsonschema>=4,<5"]
 
 [project.scripts]
+foresmoke-perception = "foresmoke.perception.cli:main"
 foresmoke-reason = "foresmoke.reasoning.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["foresmoke*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/reasoning"]
+testpaths = ["tests"]
 addopts = "-ra"
+

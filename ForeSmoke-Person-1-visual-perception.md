@@ -1374,3 +1374,4 @@ The actual video demo also needs a clear baseline, a person walk-through, an obs
 If model setup consumes more than 30 minutes, use a previously working small COCO model through the same adapter and record the substitution. If live-camera integration is still failing at hour 5, finish the prerecorded-video demonstration. If inference cadence falls below two usable observations per second, reduce inference size, choose a smaller model, or use a suitable machine; do not silently weaken temporal semantics. Any timing/config changes must be shared and rerun against fixtures.
 
 No dashboard, HTTP service, message broker, database, Docker requirement, training pipeline, phone-stream integration, or extra model may displace the working lifecycle demo. Only begin stretch goals after the shared acceptance sequence passes.
+

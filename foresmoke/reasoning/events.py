@@ -16,3 +16,4 @@ def explain(event: HazardEvent) -> str:
                 f"{overlap:.2f}; {event.confirmation_evidence_ms / 1000:.1f} s positive evidence")
     return (f"{event.zone_id}: no configured obstruction observed for "
             f"{event.clear_evidence_ms / 1000:.1f} s; incident resolved")
+

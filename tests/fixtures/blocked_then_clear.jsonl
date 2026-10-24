@@ -50,3 +50,4 @@
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":49,"t_ms":9800,"tracker_epoch":0,"status":"ok","frame":{"index":294,"width":1280,"height":720,"frame_ref":null},"detections":[],"error":null}
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":50,"t_ms":10000,"tracker_epoch":0,"status":"ok","frame":{"index":300,"width":1280,"height":720,"frame_ref":null},"detections":[],"error":null}
 {"schema_version":"1.0","run_id":"01234567-89ab-4cde-8fab-0123456789ab","camera_id":"cam01","view_id":"exit-view-v1","source_kind":"video","seq":51,"t_ms":10000,"tracker_epoch":0,"status":"eof","frame":null,"detections":[],"error":null}
+

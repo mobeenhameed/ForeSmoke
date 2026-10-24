@@ -37,3 +37,4 @@ def classify(detections: list[Detection], zone: Zone, phase: Phase,
     classification = ("positive" if candidates else
                       "unknown" if person_ratio + EPSILON >= zone.person_occlusion_ratio else "negative")
     return SpatialResult(classification, candidates, overlaps, person_ratio)
+

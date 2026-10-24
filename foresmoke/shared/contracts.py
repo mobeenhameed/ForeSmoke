@@ -195,3 +195,4 @@ class ZoneState(ContractModel):
         ):
             raise ValueError("unknown state cannot retain current candidates/evidence timers")
         return self
+

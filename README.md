@@ -1,106 +1,73 @@
-# ForeSmoke — Person 2 reasoning MVP
+# ForeSmoke — merged perception and reasoning
 
-A working Python engine that turns detector observations into persistent exit-zone obstruction
-incidents. It confirms after **5 seconds of positive evidence** and resolves after **3 seconds
-of observed clearance**. Missing data, camera loss, and person occlusion never count as clearance.
+Person 1 camera package plus Person 2 reasoning branch. Processing runs locally on your Mac.
 
-**Current demo: synthetic observations, not camera footage.** The example zone must be
-calibrated to Person 1's actual camera before interpreting real detections.
+## Install on macOS
 
-## Quick start on Windows
+Use Python 3.11 or newer. Open Terminal in this extracted folder:
 
-The project environment is already installed in .venv. From this repository:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[perception,reasoning,dev]'
+python -m pytest -q
+python run_reasoning_demo.py
+```
 
-    .\.venv\Scripts\python.exe run_reasoning_demo.py
+The demo uses synthetic observations and confirms at 5000 ms, resolves at 9200 ms.
+Model weights download on the first camera run if absent. No weights or virtual environment are bundled.
 
-The demo prints confirmation at **5000 ms**, resolution at **9200 ms**, and writes:
+## Camera detection
 
-- runs/fixture/events.jsonl — two lifecycle events sharing one incident ID.
-- runs/fixture/states.jsonl — lifecycle and observation states for each packet.
-- runs/fixture/observations.jsonl — the synthetic stream used.
+```bash
+python -m foresmoke.perception --source 1 --source-kind live --camera-id cam01 --view-id exit-view-v1 --output runs/camera-01/observations.jsonl --preview
+```
 
-The demo helper replaces only these generated demo outputs on each run.
+Replace `1` with your working iPhone camera index. Camera selection is independent of Photo Booth.
 
-For a fresh checkout, use Python 3.11:
+## Combined live demonstration
 
-    python -m venv .venv
-    .\.venv\Scripts\python.exe -m pip install -r requirements-reasoning.lock.txt
-    .\.venv\Scripts\python.exe -m pip install --no-deps -e .
-    .\.venv\Scripts\python.exe run_reasoning_demo.py
+First calibrate `configs/zones.json` using the actual fixed iPhone view. Its supplied polygon is SYNTHETIC and is not your exit. See `docs/CALIBRATION.md`. Moving, cropping or mirroring the camera requires new calibration/view ID.
 
-Alternatively, resolve compatible dependencies:
+```bash
+python -m foresmoke.demo --source 1 --source-kind live --zones configs/zones.json --run-dir runs/live-01 --preview
+```
 
-    .\.venv\Scripts\python.exe -m pip install -e ".[reasoning,dev]"
+Press q in the preview or Ctrl+C to stop. Use a new run directory each time. The preview shows detections, zone boundaries and phase / observation status. A stale feed can display CONFIRMED / UNKNOWN; shutting down does not resolve an incident. Recordings, events and snapshots are separate JSONL files in the run directory.
 
-No Torch, Ultralytics, camera, GPU, or model download is required for Person 2.
-On macOS/Linux use .venv/bin/python instead of the Windows environment executable.
+To save synchronized video evidence, add `--record-video`:
 
-## Replay Person 1's observations
+```bash
+python -m foresmoke.demo --source 1 --source-kind live --zones configs/zones.json --run-dir runs/live-01 --preview --record-video
+```
 
-    .\.venv\Scripts\python.exe -m foresmoke.reasoning --input runs/input/observations.jsonl --zones configs/zones.json --events runs/replay/events.jsonl --snapshots runs/replay/states.jsonl
+The run directory then contains:
 
-Use a new run directory for each recording. The --force flag explicitly permits replacing
-existing outputs; inputs and configuration are protected from output-path collisions.
-The --debug flag logs overlap, classification, credited time, and state transitions.
-Diagnostics go to stderr; event and state files contain JSON only.
+- `raw_footage.mp4`: clean, unannotated frames received from the iPhone camera, recorded at 15 fps by default.
+- `combined_three_panel.mp4`: all three views synchronized horizontally.
 
-Replay preserves source timestamps, so accelerated playback does not shorten thresholds.
-Even a recording labeled source_kind=live has the wall-clock watchdog disabled in file replay.
+The comparison video uses the processed observation cadence, five frames per second by default, so every frame aligns with one JSONL observation and reasoning result. Change processing and comparison cadence with `--target-hz`, for example `--target-hz 8`. Higher values increase model load. Change the clean recording cadence with `--raw-fps 20`. The MP4 files contain no audio. Here “raw” means the clean camera image before ForeSmoke overlays; Continuity Camera/OpenCV does not expose iPhone sensor RAW video.
 
-For a live JSONL pipe, use --input -. A separate reader thread allows freshness checks every
-250 ms. The two-second watchdog applies when packets declare source_kind=live. PowerShell
-pipelines may buffer; prefer the in-process API for the final camera integration.
+Add `--record-panel-videos` if you also want separate `detections.mp4` and `final_results.mp4` files. This creates two extra encoders, so the default records only the clean source and combined comparison to reduce load on the Mac.
 
-## Test and benchmark
+The three-panel video uses 640-pixel-wide panels by default, producing a compact 1920-pixel-wide comparison. Use `--panel-width 800` for larger panels if the Mac keeps up.
 
-    .\.venv\Scripts\python.exe -m pytest -q
-    .\.venv\Scripts\python.exe -m foresmoke.reasoning.benchmark
-    .\.venv\Scripts\python.exe -m foresmoke.reasoning.fixtures
-    .\.venv\Scripts\python.exe -m foresmoke.shared.export_schemas
+Video input also works: use `--source demo.mp4 --source-kind video --source-fps 30` with the video's actual constant FPS. Do not use a camera calibration for differently framed footage.
 
-The delivered run passed **86 tests**. Measured p95 reasoning latency was **2.184 ms**
-for 50 synthetic detections and one zone. This excludes camera/model time.
-See docs/ACCEPTANCE.md for measurements, coverage, and remaining real-world checks.
+## Replay saved observations
 
-## What is implemented
+```bash
+python -m foresmoke.reasoning --input runs/camera-01/observations.jsonl --zones configs/zones.json --events runs/replay-01/events.jsonl --snapshots runs/replay-01/states.jsonl
+```
 
-- Strict Pydantic models and the original JSON Schema from the brief.
-- Validated polygons and actual bottom-strip/zone intersection area, including concave zones.
-- Class/score filtering, overlap hysteresis, and person-occlusion handling.
-- CLEAR → POSSIBLE → CONFIRMED → RESOLVED, with separate observed/unknown status.
-- Stable incident/event IDs; occupancy tolerates tracker ID changes and null IDs.
-- Timestamp/run/view/aspect validation, duplicate suppression, watchdogs, and safe EOF handling.
-- Replay CLI, streaming stdin, 19 synthetic fixtures, tests, and a benchmark.
-- Independently configured zones; the default demo uses one.
+Replay preserves source times and disables the wall-clock watchdog. Results using the synthetic example zone are only software checks, not findings about your exit.
 
-## Package boundaries
+## Integration notes
 
-| Path | Purpose |
-|---|---|
-| foresmoke/reasoning/engine.py | Public API and temporal state |
-| foresmoke/reasoning/geometry.py | Spatial classifier |
-| foresmoke/reasoning/config.py | Configuration and geometric validation |
-| foresmoke/reasoning/events.py | Stable IDs and summaries |
-| foresmoke/reasoning/__main__.py | Replay and streaming CLI |
-| foresmoke/shared/contracts.py | Shared model bootstrap for Person 1 to adopt |
-| configs/zones.json | **Synthetic, uncalibrated** example zone |
-| schemas/foresmoke-v1.schema.json | Exact contract from the supplied brief |
-| schemas/generated/ | Exported Pydantic structural schemas |
-| tests/fixtures/ | Synthetic normal and intentionally malformed inputs |
-| docs/PERSON_1_HANDOFF.md | Integration API and ownership notes |
-| docs/CALIBRATION.md | Replacing the example zone with a real camera view |
+Person 2's strict shared contract is canonical: FrameMeta, string UUIDs, list boxes/detections, explicit schema_version, and Candidate.zone_overlap. Both components import the same module. Perception and reasoning extras are combined; all tests are discovered.
 
-No shared implementation existed, so Person 2 bootstrapped the contract module from the brief.
-Person 1 should reuse/adopt this module rather than maintaining another copy. Shared imports
-do not load geometry or detector libraries.
+The integrated runner runs inference in a worker and keeps reasoning and OpenCV GUI on the main thread. It logs snapshots during watchdog ticks even when inference stalls. Live queue capacity is two; offline observations are not dropped. Invalid packets break continuity; producer failures return a nonzero exit status.
 
-## Limitations
+Raw detection and tracked inference use separate model instances so tracking callbacks cannot suppress unmatched current boxes. This retains a two-inference-pass cost. Measure speed and memory on your Mac. Real camera/GPU and GUI operation have not been validated in this Linux build environment.
 
-This detects configured visual zone occupancy, not smoke, fire, legal compliance, physical
-clearance width, or guaranteed exit safety. People are excluded as obstruction candidates.
-The person-occlusion heuristic is incomplete; a healthy detector can still miss an object.
-Open incidents are not persisted/restored across acquisition runs.
-
-Person 1's camera/detector and final preview runner remain Person 1's work. No real recording
-or camera reference image was available. The synthetic tests verify reasoning rules;
-real detection accuracy, zone calibration, and the complete live demonstration remain unverified.
+Original Person 2 documentation and synthetic test fixtures are preserved. See docs/MERGE_REPORT.md for verification.

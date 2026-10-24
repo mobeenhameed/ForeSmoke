@@ -14,3 +14,4 @@ def validate_config(config: ZoneConfig) -> ZoneConfig:
 
 def load_config(path: str | Path) -> ZoneConfig:
     return validate_config(ZoneConfig.model_validate_json(Path(path).read_text(encoding="utf-8-sig")))
+

@@ -25,6 +25,26 @@ python -m foresmoke.perception --source 1 --source-kind live --camera-id cam01 -
 
 Replace `1` with your working iPhone camera index. Camera selection is independent of Photo Booth.
 
+## Annotate the exit-access zone
+
+Use a clear frame from the fixed camera or recorded video. The annotator opens the selected
+frame, lets you click the floor/access corners, and writes normalized coordinates into the
+existing zone configuration while preserving the reasoning thresholds:
+
+```bash
+python -m foresmoke.annotate --source clear_then_chair.mp4 --source-kind video \
+  --frame-index 0 --output configs/zones.json --camera-id cam01 --view-id exit-view-v2
+```
+
+Click at least three corners around the floor/access area that must remain clear. Press `U` to
+undo the last point, `R` to reset, `Enter` to save, or `Esc` to cancel. Do not outline the exit
+sign; outline the usable floor/access region. Keep the camera fixed after annotation. Use a new
+view ID if the camera is moved, cropped, rotated, or mirrored.
+
+For a single image, use `--source-kind image`. For a live camera, use `--source-kind live` and
+the numeric camera index. The window scales large videos for display but saves coordinates in
+the original frame's coordinate system.
+
 ## Combined live demonstration
 
 First calibrate `configs/zones.json` using the actual fixed iPhone view. Its supplied polygon is SYNTHETIC and is not your exit. See `docs/CALIBRATION.md`. Moving, cropping or mirroring the camera requires new calibration/view ID.

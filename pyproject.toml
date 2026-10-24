@@ -17,6 +17,7 @@ dev = ["pytest>=8,<10", "jsonschema>=4,<5"]
 [project.scripts]
 foresmoke-perception = "foresmoke.perception.cli:main"
 foresmoke-reason = "foresmoke.reasoning.__main__:main"
+foresmoke-annotate = "foresmoke.annotate:main"
 
 [tool.setuptools.packages.find]
 include = ["foresmoke*"]
